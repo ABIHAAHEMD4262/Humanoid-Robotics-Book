@@ -1,0 +1,83 @@
+# Devcontainer + Docker Setup
+
+Create reproducible development environments with Docker and devcontainers.
+
+## Why Use Devcontainers?
+
+- Consistent development environment
+- Easy onboarding for new team members
+- Isolated dependencies
+- Works across platforms
+
+## Prerequisites
+
+- Docker Desktop (Windows/Mac) or Docker Engine (Linux)
+- Visual Studio Code
+- Remote - Containers extension
+
+## Setup Instructions
+
+### 1. Install Docker
+
+**Ubuntu**:
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+```
+
+**Windows/Mac**: Install Docker Desktop
+
+### 2. Install VS Code Extension
+
+Install "Dev Containers" extension in VS Code.
+
+### 3. Open Project in Container
+
+```bash
+# In VS Code:
+# Cmd/Ctrl + Shift + P
+# "Dev Containers: Reopen in Container"
+```
+
+## Dockerfile Example
+
+See `.devcontainer/Dockerfile` in the project root.
+
+## Custom Configuration
+
+Modify `.devcontainer/devcontainer.json` to:
+- Add VS Code extensions
+- Configure port forwarding
+- Set environment variables
+- Run post-create commands
+
+## GPU Support
+
+Enable GPU in devcontainer:
+
+```json
+{
+  "runArgs": ["--gpus", "all"],
+  "containerEnv": {
+    "NVIDIA_VISIBLE_DEVICES": "all"
+  }
+}
+```
+
+## Troubleshooting
+
+**Issue**: Container fails to build
+- Check Docker daemon is running
+- Verify internet connection
+- Review build logs
+
+**Issue**: GPU not accessible
+- Install NVIDIA Container Toolkit
+- Verify GPU drivers on host
+
+## Next Steps
+
+- Customize devcontainer for your needs
+- Share configuration with team
+- Add project-specific tools and dependencies

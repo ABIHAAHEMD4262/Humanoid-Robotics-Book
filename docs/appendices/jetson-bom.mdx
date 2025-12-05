@@ -1,0 +1,56 @@
+# Economy Jetson Kit BOM (Bill of Materials)
+
+Complete shopping list for an economical Jetson-based development setup.
+
+## Core Components
+
+| Item | Part Number | Price (USD) | Quantity |
+|------|-------------|-------------|----------|
+| Jetson Orin Nano Dev Kit | 945-13766-0000-000 | $499 | 1 |
+| microSD Card (128GB) | SanDisk Extreme | $25 | 1 |
+| USB-C Power Supply (65W) | Generic | $20 | 1 |
+| Intel RealSense D435 | D435 | $179 | 1 |
+| USB Hub | Generic 4-port | $15 | 1 |
+
+## Optional Add-Ons
+
+- USB Microphone: $25
+- External SSD (1TB): $80
+- Cooling Fan: $15
+
+## Total Cost
+
+- **Base Setup**: $738
+- **With Optional Add-Ons**: $858
+
+## Assembly Instructions
+
+1. Insert microSD card with JetPack image
+2. Connect power supply
+3. Connect peripherals (keyboard, mouse, monitor)
+4. Power on and complete setup
+
+## Software Setup
+
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install ROS 2
+# (instructions vary by JetPack version)
+
+# Install Isaac ROS
+# (follow NVIDIA documentation)
+```
+
+## Performance Expectations
+
+- Whisper Base: 1-2x real-time
+- Object Detection (YOLO): 15-20 FPS
+- VSLAM: Real-time capable
+
+## Next Steps
+
+- Complete software setup
+- Run example projects
+- Build your first robot application

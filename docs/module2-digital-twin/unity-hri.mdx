@@ -1,0 +1,92 @@
+# Unity for High-Fidelity Visualization & HRI
+
+Learn how to integrate Unity with ROS 2 for photorealistic visualization and enhanced human-robot interaction.
+
+## Overview
+
+Unity provides:
+- High-fidelity 3D rendering
+- Advanced lighting and materials
+- UI/UX tools for HRI interfaces
+- VR/AR support for immersive interaction
+
+## Unity ROS 2 Integration
+
+### Installation
+
+Install Unity Hub and Unity 2022 LTS or later.
+
+### ROS-TCP-Connector
+
+The ROS-TCP-Connector package enables communication between Unity and ROS 2:
+
+```bash
+# In your ROS 2 workspace
+git clone https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git src/ros_tcp_endpoint
+colcon build --packages-select ros_tcp_endpoint
+```
+
+### Unity Project Setup
+
+1. Create new Unity project
+2. Install ROS-TCP-Connector package from Unity Package Manager
+3. Configure ROS settings (hostname, port)
+
+## Importing Robot Models
+
+### FBX/COLLADA Import
+
+Export your robot model from URDF:
+
+```bash
+ros2 run urdf_to_unity your_robot.urdf
+```
+
+Import the generated FBX file into Unity.
+
+## Creating HRI Interfaces
+
+### Voice Command UI
+
+```csharp
+using UnityEngine;
+using RosMessageTypes.Std;
+using Unity.Robotics.ROSTCPConnector;
+
+public class VoiceCommandUI : MonoBehaviour
+{
+    private ROSConnection ros;
+    
+    void Start()
+    {
+        ros = ROSConnection.GetOrCreateInstance();
+        ros.RegisterPublisher<StringMsg>("/voice_command");
+    }
+    
+    public void SendCommand(string command)
+    {
+        StringMsg msg = new StringMsg(command);
+        ros.Publish("/voice_command", msg);
+    }
+}
+```
+
+### Robot Status Dashboard
+
+Create real-time visualization of:
+- Joint states
+- Sensor data
+- Task execution status
+- Battery level
+- Error messages
+
+## Next Steps
+
+- Build interactive HRI scenarios
+- Add VR/AR capabilities
+- Create training simulations
+
+## References
+
+- Unity Robotics Hub: https://github.com/Unity-Technologies/Unity-Robotics-Hub
+- ROS-TCP-Connector: https://github.com/Unity-Technologies/ROS-TCP-Connector

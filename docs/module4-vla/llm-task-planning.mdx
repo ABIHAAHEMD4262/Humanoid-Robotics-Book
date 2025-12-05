@@ -1,0 +1,29 @@
+# LLM (Local or API) → Task Planning → ROS 2 Action Sequence
+
+Use language models to convert natural language commands into executable robot actions.
+
+## Overview
+- LLM-based task decomposition
+- Action sequence generation
+- ROS 2 integration
+
+## Architecture
+```
+Voice Command → LLM → Task Plan → ROS 2 Actions → Execution
+```
+
+## Implementation
+```python
+class TaskPlanner:
+    def __init__(self):
+        self.llm = load_llm_model()
+        self.action_library = load_actions()
+
+    def plan(self, command):
+        task_sequence = self.llm.generate(command)
+        return self.convert_to_actions(task_sequence)
+```
+
+## Example Tasks
+- "Pick up the cup" → [detect_object, approach, grasp, lift]
+- "Go to the kitchen" → [plan_path, navigate, stop]

@@ -1,0 +1,25 @@
+# End-to-End VLA Pipeline (Voice → Perception → Planning → Execution)
+
+Build a complete vision-language-action system from voice input to robot execution.
+
+## Pipeline Overview
+1. **Voice Input**: Whisper STT
+2. **Language Understanding**: LLM processing
+3. **Visual Perception**: Object detection and scene understanding
+4. **Task Planning**: Action sequence generation
+5. **Execution**: ROS 2 action execution
+
+## System Architecture
+```
+┌────────┐    ┌─────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐
+│Microphone│───►│Whisper│───►│   LLM    │───►│Perception│───►│  Actions  │
+└────────┘    └─────┘    └──────────┘    └──────────┘    └───────────┘
+```
+
+## Implementation Guide
+Detailed code walkthrough for each component.
+
+## Testing and Validation
+- Unit tests for each pipeline stage
+- Integration testing
+- Real-world scenario validation

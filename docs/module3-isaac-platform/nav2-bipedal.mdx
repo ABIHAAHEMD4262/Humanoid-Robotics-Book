@@ -1,0 +1,59 @@
+# Nav2 Stack for Bipedal Navigation
+
+Adapt the Nav2 navigation stack for humanoid bipedal robots.
+
+## Overview
+
+Nav2 provides:
+- Path planning
+- Obstacle avoidance
+- Recovery behaviors
+- Lifecycle management
+
+## Challenges for Bipedal Robots
+
+Unlike wheeled robots, bipedal robots must consider:
+- Footstep planning
+- Dynamic balance
+- Gait execution
+- Terrain adaptation
+
+## Configuration
+
+### Custom Costmap Layers
+
+```yaml
+costmap:
+  footprint: [[0.15, 0.1], [0.15, -0.1], [-0.15, -0.1], [-0.15, 0.1]]
+  inflation_layer:
+    inflation_radius: 0.5
+  static_layer:
+    enabled: true
+```
+
+### Bipedal Motion Planner
+
+Implement footstep planning:
+
+```python
+class BipedalPlanner:
+    def plan_footsteps(self, start, goal):
+        # Footstep planning algorithm
+        footsteps = []
+        # Generate footstep sequence
+        return footsteps
+```
+
+## Testing
+
+Validate navigation in simulation:
+
+```bash
+ros2 launch nav2_bringup bringup_launch.py use_sim_time:=True
+```
+
+## Next Steps
+
+- Tune parameters for specific terrain
+- Add terrain classification
+- Implement adaptive gait control

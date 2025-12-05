@@ -1,0 +1,73 @@
+# Cloud-Only Path (AWS g5/g6 instances)
+
+Develop and test Physical AI without local GPU hardware using cloud instances.
+
+## Why Cloud Development?
+
+- No upfront hardware cost
+- Access to latest GPUs
+- Scalable compute resources
+- Easy collaboration
+
+## AWS Setup
+
+### Instance Types
+
+- **g5.xlarge**: $1.01/hour - Entry level
+- **g5.2xlarge**: $1.21/hour - Recommended for development
+- **g6.xlarge**: $0.94/hour - Latest generation
+
+### Launch Instance
+
+```bash
+# Use Deep Learning AMI (Ubuntu 22.04)
+# Configure security groups for SSH and VNC
+```
+
+## Remote Development
+
+### VS Code Remote SSH
+
+```bash
+# Install VS Code extension: Remote - SSH
+# Connect to your instance
+```
+
+### VNC for GUI Applications
+
+```bash
+# Install TigerVNC on instance
+sudo apt install tigervnc-standalone-server tigervnc-common
+
+# Start VNC server
+vncserver :1 -geometry 1920x1080 -depth 24
+```
+
+## ROS 2 + Gazebo in Cloud
+
+Run simulations remotely:
+
+```bash
+# Launch Gazebo in headless mode
+LIBGL_ALWAYS_SOFTWARE=1 gz sim --headless-rendering
+```
+
+## Cost Optimization
+
+- Use Spot Instances (up to 70% savings)
+- Stop instances when not in use
+- Use S3 for data storage
+- Set billing alerts
+
+## Limitations
+
+- Network latency for interactive work
+- Cannot deploy to physical robots directly
+- Bandwidth costs for large data transfers
+
+## Next Steps
+
+- Set up development environment
+- Run simulations in cloud
+- Train models with cloud GPUs
+- Deploy to edge devices when ready

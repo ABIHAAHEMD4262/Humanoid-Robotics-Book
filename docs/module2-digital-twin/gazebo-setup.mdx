@@ -1,0 +1,222 @@
+# Gazebo Ignition/Harmonic Setup and Physics Tuning
+
+In this section, we'll set up Gazebo Ignition (also known as Gazebo Harmonic in newer versions) for simulating humanoid robots with accurate physics.
+
+## What is Gazebo?
+
+Gazebo is an open-source 3D robotics simulator that provides accurate physics simulation, sensor models, and visualization. It's the industry standard for ROS-based robot development.
+
+## Installation
+
+### Ubuntu 22.04 Installation
+
+First, ensure your system is up to date:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Installing Gazebo Harmonic
+
+Add the Gazebo repository:
+
+```bash
+sudo apt-get update
+sudo apt-get install lsb-release wget gnupg
+
+sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install gz-harmonic
+```
+
+### Verify Installation
+
+Check that Gazebo is installed correctly:
+
+```bash
+gz sim --version
+```
+
+## Physics Configuration
+
+### Understanding Physics Engines
+
+Gazebo supports multiple physics engines:
+- **ODE (Open Dynamics Engine)**: Default, fast, suitable for most applications
+- **Bullet**: More accurate collisions
+- **DART**: Advanced features, better for humanoid robots
+- **Simbody**: High-fidelity biomechanical simulations
+
+For humanoid robots, we recommend using DART for better accuracy.
+
+### Configuring Physics Parameters
+
+Create a world file with optimized physics settings:
+
+```xml
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <world name="humanoid_world">
+    <physics name="dart_physics" type="dart">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+```
+
+## Physics Tuning for Humanoid Robots
+
+### Key Parameters
+
+1. **Time Step Size** (`max_step_size`): Smaller is more accurate but slower
+   - Recommended: 0.001s (1ms) for humanoid robots
+   - Balance between accuracy and performance
+
+2. **Solver Iterations**: More iterations = more stable contacts
+   ```xml
+   <solver>
+     <iterations>50</iterations>
+   </solver>
+   ```
+
+3. **Contact Parameters**: Critical for bipedal stability
+   ```xml
+   <contact>
+     <collide_bitmask>0x01</collide_bitmask>
+     <surface>
+       <friction>
+         <ode>
+           <mu>1.0</mu>
+           <mu2>1.0</mu2>
+           <slip1>0.0</slip1>
+           <slip2>0.0</slip2>
+         </ode>
+       </friction>
+       <bounce>
+         <restitution_coefficient>0.0</restitution_coefficient>
+         <threshold>1e-6</threshold>
+       </bounce>
+       <contact>
+         <ode>
+           <kp>1e7</kp>
+           <kd>1.0</kd>
+           <max_vel>0.01</max_vel>
+           <min_depth>0.001</min_depth>
+         </ode>
+       </contact>
+     </surface>
+   </contact>
+   ```
+
+## Testing Your Setup
+
+Launch Gazebo with an empty world:
+
+```bash
+gz sim empty.sdf
+```
+
+You should see the Gazebo interface with an empty world. This confirms your setup is working correctly.
+
+## Integration with ROS 2
+
+To bridge Gazebo with ROS 2:
+
+```bash
+sudo apt-get install ros-humble-ros-gz
+```
+
+Launch the bridge:
+
+```bash
+ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock
+```
+
+## Next Steps
+
+Now that Gazebo is set up and tuned, you're ready to:
+1. Convert URDF models to SDF format
+2. Add sensors to your humanoid robot
+3. Test walking gaits in simulation
+
+## Troubleshooting
+
+**Issue**: Gazebo crashes on startup
+- **Solution**: Check GPU drivers, especially for NVIDIA cards
+
+**Issue**: Physics simulation is unstable
+- **Solution**: Reduce time step size, increase solver iterations
+
+**Issue**: Simulation runs too slowly
+- **Solution**: Increase time step, reduce sensor update rates, simplify geometry
+
+## References
+
+- Gazebo Documentation: https://gazebosim.org/docs
+- DART Physics Engine: https://dartsim.github.io/
+- ROS 2 Gazebo Integration: https://github.com/ros-simulation/ros_gz

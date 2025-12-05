@@ -1,0 +1,245 @@
+# Sensor Simulation (LiDAR, Depth Camera, IMU)
+
+Learn how to simulate realistic sensors for your humanoid robot in Gazebo, including LiDAR, depth cameras, and IMUs.
+
+## Overview
+
+Sensors are critical for robot perception and navigation. In this section, we'll add and configure:
+- **LiDAR**: For 2D/3D environment mapping
+- **Depth Cameras**: For visual perception and object detection
+- **IMU (Inertial Measurement Unit)**: For orientation and acceleration data
+
+## LiDAR Sensor Configuration
+
+### Adding a 2D LiDAR to Your Robot
+
+```xml
+<sensor name="lidar" type="gpu_lidar">
+  <pose>0 0 0.3 0 0 0</pose>
+  <topic>/lidar</topic>
+  <update_rate>10</update_rate>
+  <lidar>
+    <scan>
+      <horizontal>
+        <samples>640</samples>
+        <resolution>1</resolution>
+        <min_angle>-3.14159</min_angle>
+        <max_angle>3.14159</max_angle>
+      </horizontal>
+    </scan>
+    <range>
+      <min>0.1</min>
+      <max>30.0</max>
+      <resolution>0.01</resolution>
+    </range>
+    <noise>
+      <type>gaussian</type>
+      <mean>0.0</mean>
+      <stddev>0.01</stddev>
+    </noise>
+  </lidar>
+  <always_on>true</always_on>
+  <visualize>true</visualize>
+</sensor>
+```
+
+### Visualizing LiDAR Data
+
+Use RViz2 to visualize sensor data:
+
+```bash
+ros2 run rviz2 rviz2
+```
+
+Add a LaserScan display and subscribe to `/lidar` topic.
+
+## Depth Camera Configuration
+
+### Adding an RGBD Camera
+
+```xml
+<sensor name="depth_camera" type="depth">
+  <pose>0.1 0 0.4 0 0 0</pose>
+  <camera>
+    <horizontal_fov>1.5708</horizontal_fov>
+    <image>
+      <width>640</width>
+      <height>480</height>
+    </image>
+    <clip>
+      <near>0.1</near>
+      <far>10.0</far>
+    </clip>
+  </camera>
+  <always_on>1</always_on>
+  <update_rate>30</update_rate>
+  <visualize>true</visualize>
+  <topic>/depth_camera</topic>
+</sensor>
+```
+
+### Processing Depth Data in ROS 2
+
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+import cv2
+
+class DepthProcessor(Node):
+    def __init__(self):
+        super().__init__('depth_processor')
+        self.subscription = self.create_subscription(
+            Image,
+            '/depth_camera/depth/image_raw',
+            self.depth_callback,
+            10
+        )
+        self.bridge = CvBridge()
+
+    def depth_callback(self, msg):
+        depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='32FC1')
+        # Process depth data here
+        cv2.imshow('Depth', depth_image / 10.0)  # Normalize for display
+        cv2.waitKey(1)
+
+def main():
+    rclpy.init()
+    node = DepthProcessor()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+```
+
+## IMU Sensor Configuration
+
+### Adding an IMU
+
+```xml
+<sensor name="imu" type="imu">
+  <pose>0 0 0.2 0 0 0</pose>
+  <always_on>true</always_on>
+  <update_rate>100</update_rate>
+  <topic>/imu</topic>
+  <imu>
+    <angular_velocity>
+      <x>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>2e-4</stddev>
+        </noise>
+      </x>
+      <y>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>2e-4</stddev>
+        </noise>
+      </y>
+      <z>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>2e-4</stddev>
+        </noise>
+      </z>
+    </angular_velocity>
+    <linear_acceleration>
+      <x>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>1.7e-2</stddev>
+        </noise>
+      </x>
+      <y>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>1.7e-2</stddev>
+        </noise>
+      </y>
+      <z>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>1.7e-2</stddev>
+        </noise>
+      </z>
+    </linear_acceleration>
+  </imu>
+</sensor>
+```
+
+### Reading IMU Data in ROS 2
+
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Imu
+
+class IMUReader(Node):
+    def __init__(self):
+        super().__init__('imu_reader')
+        self.subscription = self.create_subscription(
+            Imu,
+            '/imu',
+            self.imu_callback,
+            10
+        )
+
+    def imu_callback(self, msg):
+        self.get_logger().info(f'Orientation: {msg.orientation}')
+        self.get_logger().info(f'Angular velocity: {msg.angular_velocity}')
+        self.get_logger().info(f'Linear acceleration: {msg.linear_acceleration}')
+```
+
+## Sensor Fusion
+
+Combining multiple sensor inputs for robust perception:
+
+```python
+class SensorFusion(Node):
+    def __init__(self):
+        super().__init__('sensor_fusion')
+
+        # Subscribe to multiple sensors
+        self.imu_sub = self.create_subscription(Imu, '/imu', self.imu_cb, 10)
+        self.lidar_sub = self.create_subscription(LaserScan, '/lidar', self.lidar_cb, 10)
+        self.depth_sub = self.create_subscription(Image, '/depth_camera/depth/image_raw', self.depth_cb, 10)
+
+        # Your fusion logic here
+```
+
+## Testing and Validation
+
+### Sensor Health Checks
+
+```bash
+# Check sensor topics
+ros2 topic list | grep -E "(lidar|imu|depth)"
+
+# Monitor sensor data rates
+ros2 topic hz /lidar
+ros2 topic hz /imu
+ros2 topic hz /depth_camera/depth/image_raw
+
+# Echo sensor data
+ros2 topic echo /imu
+```
+
+## Performance Optimization
+
+- Reduce sensor update rates for better performance
+- Use GPU-accelerated sensors when available
+- Simplify sensor noise models if not needed
+- Limit the number of simultaneous sensors
+
+## Next Steps
+
+With sensors configured:
+1. Integrate sensors with perception pipelines
+2. Use sensor data for navigation and mapping
+3. Test in various environments and lighting conditions
+
+## References
+
+- Gazebo Sensor Documentation: https://gazebosim.org/api/sensors/
+- ROS 2 Sensor Messages: https://docs.ros.org/en/rolling/p/sensor_msgs/
+- IMU Filtering Tutorial: http://wiki.ros.org/imu_filter_madgwick

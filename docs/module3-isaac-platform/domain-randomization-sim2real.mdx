@@ -1,0 +1,58 @@
+# Domain Randomization & Sim-to-Real Techniques
+
+Bridge the sim-to-real gap using domain randomization.
+
+## The Sim-to-Real Problem
+
+Models trained in simulation often fail in reality due to:
+- Visual appearance differences
+- Physics inaccuracies
+- Sensor noise variations
+- Environmental diversity
+
+## Domain Randomization
+
+Randomize simulation parameters:
+- Lighting conditions
+- Object textures and materials
+- Physics parameters (friction, mass)
+- Sensor noise characteristics
+
+### Implementation
+
+```python
+class DomainRandomizer:
+    def randomize_lighting(self):
+        intensity = random.uniform(100, 1000)
+        color_temp = random.uniform(3000, 7000)
+        # Apply to scene
+
+    def randomize_materials(self):
+        for obj in scene.objects:
+            obj.material = random.choice(materials)
+
+    def randomize_physics(self):
+        friction = random.uniform(0.5, 1.5)
+        restitution = random.uniform(0.0, 0.5)
+        # Apply to simulation
+```
+
+## Sim-to-Real Best Practices
+
+1. **Start with strong simulation** - Ensure physics accuracy
+2. **Randomize extensively** - Cover expected real-world variations
+3. **Validate incrementally** - Test components before full system
+4. **Measure and adapt** - Monitor real-world performance and adjust
+
+## Validation
+
+Test your trained models:
+1. In simulation with randomization
+2. On real hardware in controlled settings
+3. In target deployment environments
+
+## Next Steps
+
+- Train policies with domain randomization
+- Deploy and measure performance
+- Iterate based on real-world results

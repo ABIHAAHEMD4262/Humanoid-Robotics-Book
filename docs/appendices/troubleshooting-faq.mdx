@@ -1,0 +1,103 @@
+# Troubleshooting FAQ
+
+Common issues and solutions for Physical AI development.
+
+## ROS 2 Issues
+
+### Q: "ros2: command not found"
+**A**: Source your ROS 2 setup file:
+```bash
+source /opt/ros/humble/setup.bash
+```
+Add to `~/.bashrc` to make permanent.
+
+### Q: Nodes can't discover each other
+**A**: Check ROS_DOMAIN_ID:
+```bash
+export ROS_DOMAIN_ID=0
+```
+
+## Gazebo Issues
+
+### Q: Gazebo crashes on startup
+**A**: Update GPU drivers:
+```bash
+# NVIDIA
+sudo ubuntu-drivers autoinstall
+```
+
+### Q: Simulation runs very slowly
+**A**: 
+- Reduce sensor update rates
+- Simplify collision geometry
+- Use headless rendering
+- Increase time step size
+
+## Jetson Issues
+
+### Q: Out of memory errors
+**A**:
+- Increase swap space
+- Reduce model size
+- Use quantized models
+- Free RAM by closing unnecessary processes
+
+### Q: Slow inference speed
+**A**:
+- Use TensorRT optimization
+- Reduce input resolution
+- Use smaller models
+- Enable CUDA streams
+
+## Isaac Sim Issues
+
+### Q: License activation fails
+**A**: 
+- Check internet connection
+- Verify NVIDIA account
+- Contact NVIDIA support
+
+### Q: Assets won't load
+**A**:
+- Clear Omniverse cache
+- Re-download assets
+- Check disk space
+
+## Build Issues
+
+### Q: colcon build fails
+**A**:
+- Install all dependencies
+- Check for typos in package.xml
+- Clear build folder and rebuild
+
+### Q: CMake errors
+**A**:
+- Update CMake version
+- Check CMakeLists.txt syntax
+- Verify all find_package dependencies
+
+## Network Issues
+
+### Q: Can't access robot over network
+**A**:
+- Check firewall settings
+- Verify IP addresses
+- Test with ping
+- Check ROS_DOMAIN_ID matches
+
+## Getting Help
+
+- ROS Answers: https://answers.ros.org
+- ROS Discourse: https://discourse.ros.org
+- Isaac Sim Forums: https://forums.developer.nvidia.com
+- Stack Overflow: https://stackoverflow.com (tag: ros2)
+
+## Reporting Bugs
+
+When reporting issues, include:
+- Operating system and version
+- ROS 2 distribution
+- Complete error messages
+- Steps to reproduce
+- Minimal reproducible example

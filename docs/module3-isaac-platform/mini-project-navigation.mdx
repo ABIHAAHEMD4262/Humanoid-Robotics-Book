@@ -1,0 +1,72 @@
+# Mini-Project: Autonomous Navigation in Cluttered Indoor Scene
+
+Implement full autonomous navigation for a humanoid robot in a complex environment.
+
+## Project Goals
+
+- Set up Nav2 for bipedal navigation
+- Integrate Isaac ROS perception
+- Test in cluttered apartment environment
+- Achieve reliable autonomous navigation
+
+## Environment Setup
+
+Create a challenging test environment:
+- Multiple rooms
+- Narrow doorways
+- Furniture obstacles
+- Dynamic lighting
+
+## Implementation Steps
+
+### 1. Perception Setup
+
+Configure Isaac ROS VSLAM:
+
+```bash
+ros2 launch isaac_ros_visual_slam isaac_ros_visual_slam.launch.py
+```
+
+### 2. Nav2 Configuration
+
+Set up Nav2 with custom bipedal parameters:
+
+```bash
+ros2 launch nav2_bringup bringup_launch.py params_file:=bipedal_params.yaml
+```
+
+### 3. Integration Testing
+
+Test navigation to multiple waypoints:
+
+```bash
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {pose: {position: {x: 2.0, y: 1.0, z: 0.0}}}}"
+```
+
+### 4. Performance Metrics
+
+Measure:
+- Success rate
+- Time to goal
+- Path efficiency
+- Collision avoidance
+
+## Success Criteria
+
+- ✓ 90% navigation success rate
+- ✓ No collisions
+- ✓ Smooth motion
+- ✓ Reasonable path efficiency
+
+## Deliverables
+
+- Working navigation stack
+- Demo video
+- Performance analysis
+- Lessons learned document
+
+## Next Steps
+
+- Add adaptive behaviors
+- Test with moving obstacles
+- Optimize for efficiency

@@ -1,0 +1,30 @@
+# OpenAI Whisper → Speech-to-Text on Jetson
+
+Learn how to deploy Whisper for real-time speech recognition on NVIDIA Jetson devices.
+
+## Overview
+- Whisper architecture and capabilities
+- Jetson optimization techniques
+- Integration with ROS 2
+
+## Installation on Jetson
+```bash
+pip3 install openai-whisper
+```
+
+## Real-Time STT Pipeline
+```python
+import whisper
+model = whisper.load_model("base")
+# Transcription code
+```
+
+## Performance Optimization
+- Model quantization
+- Batching strategies
+- GPU acceleration
+
+## Integration with Robot Control
+- ROS 2 node implementation
+- Voice command parsing
+- Action triggering

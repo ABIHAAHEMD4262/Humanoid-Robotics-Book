@@ -1,0 +1,70 @@
+# Isaac Sim (Omniverse) – Photorealistic Simulation & Synthetic Data Generation
+
+Learn to use NVIDIA Isaac Sim for photorealistic robot simulation and synthetic data generation.
+
+## Overview
+
+Isaac Sim provides:
+- Photorealistic rendering via Omniverse
+- Physics-accurate simulation
+- Synthetic data generation for AI training
+- Multi-robot orchestration
+
+## Installation
+
+### System Requirements
+- NVIDIA RTX GPU (RTX 3070 or higher recommended)
+- Ubuntu 22.04 or Windows 10/11
+- 32GB RAM minimum
+
+### Installation Steps
+
+```bash
+# Download from NVIDIA Omniverse Launcher
+# Install Isaac Sim extension
+```
+
+## Creating Photorealistic Environments
+
+Import assets from Omniverse library:
+- Furniture and props
+- Realistic materials and lighting
+- Environment effects
+
+## Synthetic Data Generation
+
+Generate training data for:
+- Object detection models
+- Pose estimation
+- Semantic segmentation
+- Depth estimation
+
+### Example: Generating Training Data
+
+```python
+import omni.isaac.core
+from omni.isaac.synthetic_utils import SyntheticDataHelper
+
+# Setup synthetic data generation
+data_helper = SyntheticDataHelper()
+data_helper.add_rgb_camera()
+data_helper.add_bounding_boxes()
+data_helper.add_semantic_segmentation()
+
+# Generate dataset
+data_helper.generate(num_samples=10000)
+```
+
+## Integration with ROS 2
+
+Bridge Isaac Sim with ROS 2:
+
+```bash
+ros2 launch isaac_ros_sim_bridge sim_bridge.launch.py
+```
+
+## Next Steps
+
+- Train perception models on synthetic data
+- Test sim-to-real transfer
+- Deploy to physical robots

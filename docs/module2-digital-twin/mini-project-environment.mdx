@@ -1,0 +1,73 @@
+# Mini-Project: Realistic Apartment Environment + Sensor Data Streaming
+
+Build a complete simulation environment with a humanoid robot in a realistic apartment setting.
+
+## Project Overview
+
+Create a fully functional digital twin demonstrating:
+- Realistic apartment environment
+- Humanoid robot with full sensor suite
+- Real-time sensor data streaming to ROS 2
+- Interactive controls and visualization
+
+## Step 1: Environment Modeling
+
+Create an apartment world file with:
+- Multiple rooms (living room, kitchen, bedroom)
+- Furniture and obstacles
+- Realistic lighting
+- Textured surfaces
+
+## Step 2: Robot Integration
+
+Add your humanoid robot to the environment:
+
+```bash
+gz sim apartment_world.sdf
+```
+
+## Step 3: Sensor Data Streaming
+
+Configure sensors to publish to ROS 2 topics:
+- `/lidar` - LaserScan messages
+- `/camera/image_raw` - RGB images
+- `/camera/depth/image_raw` - Depth images
+- `/imu` - IMU data
+- `/joint_states` - Robot joint positions
+
+## Step 4: Visualization
+
+Set up RViz2 for real-time visualization:
+
+```bash
+ros2 launch humanoid_viz apartment_sim.launch.py
+```
+
+## Step 5: Testing
+
+Verify all systems:
+1. Robot spawns correctly
+2. All sensors publish data
+3. Navigation is possible
+4. Performance is acceptable
+
+## Success Criteria
+
+- ✓ Environment loads in under 30 seconds
+- ✓ All sensors stream data at expected rates
+- ✓ Robot can navigate through apartment
+- ✓ Simulation runs at real-time factor ≥ 0.8
+
+## Deliverables
+
+- Working Gazebo world file
+- Robot SDF with sensors
+- Launch files for easy startup
+- README with setup instructions
+
+## Next Steps
+
+With your digital twin complete, you're ready to:
+- Implement autonomous navigation
+- Add voice control
+- Test manipulation tasks

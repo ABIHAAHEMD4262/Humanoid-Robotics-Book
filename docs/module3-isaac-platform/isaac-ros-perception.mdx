@@ -1,0 +1,57 @@
+# Isaac ROS – Hardware-Accelerated Perception (VSLAM, 3D Reconstruction)
+
+Leverage GPU-accelerated perception with NVIDIA Isaac ROS.
+
+## Overview
+
+Isaac ROS provides:
+- Hardware-accelerated perception nodes
+- VSLAM (Visual SLAM)
+- 3D reconstruction
+- Object detection
+- Pose estimation
+
+## Installation
+
+```bash
+sudo apt-get install -y ros-humble-isaac-ros-*
+```
+
+## VSLAM Setup
+
+Visual SLAM for robot localization:
+
+```bash
+ros2 launch isaac_ros_visual_slam isaac_ros_visual_slam.launch.py
+```
+
+### Configuring VSLAM Parameters
+
+```yaml
+vslam_params:
+  enable_imu_fusion: true
+  enable_loop_closure: true
+  map_frame: "map"
+  odom_frame: "odom"
+  base_frame: "base_link"
+```
+
+## 3D Reconstruction
+
+Build 3D maps of environments:
+
+```bash
+ros2 launch isaac_ros_nvblox nvblox.launch.py
+```
+
+## Performance Benchmarks
+
+- 10x faster than CPU-only perception
+- Real-time processing at 30 FPS
+- Low latency for reactive control
+
+## Next Steps
+
+- Integrate with navigation stack
+- Test in various environments
+- Optimize for your hardware
