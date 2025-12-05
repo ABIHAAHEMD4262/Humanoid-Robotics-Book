@@ -1,0 +1,516 @@
+# 3.2 Visual & Collision Geometry
+
+**Estimated Reading Time**: 10 minutes
+**Prerequisites**: 3.1 URDF Basics
+**Difficulty**: Intermediate
+
+## Introduction
+
+Robots need two types of geometry:
+- **Visual**: How the robot looks (rendering)
+- **Collision**: Physical boundaries (physics simulation)
+
+These can be different. Visual geometry is detailed. Collision geometry is simplified for performance.
+
+## Visual Geometry
+
+Visual geometry defines appearance. It's used for:
+- RViz visualization
+- Simulation rendering
+- User interfaces
+
+### Primitive Shapes
+
+URDF supports basic shapes:
+
+#### Box
+
+```xml
+<visual>
+  <geometry>
+    <box size="length width height"/>
+  </geometry>
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+</visual>
+```
+
+**Example - Chassis**:
+```xml
+<link name="chassis">
+  <visual>
+    <geometry>
+      <box size="0.6 0.4 0.2"/>
+    </geometry>
+    <material name="gray">
+      <color rgba="0.7 0.7 0.7 1"/>
+    </material>
+  </visual>
+</link>
+```
+
+#### Cylinder
+
+```xml
+<visual>
+  <geometry>
+    <cylinder radius="0.05" length="0.3"/>
+  </geometry>
+</visual>
+```
+
+**Example - Wheel**:
+```xml
+<link name="wheel">
+  <visual>
+    <origin xyz="0 0 0" rpy="1.57 0 0"/>  <!-- Rotate 90° to align -->
+    <geometry>
+      <cylinder radius="0.1" length="0.05"/>
+    </geometry>
+    <material name="black">
+      <color rgba="0.1 0.1 0.1 1"/>
+    </material>
+  </visual>
+</link>
+```
+
+:::tip
+Cylinders are aligned with Z-axis by default. Rotate to align with other axes.
+:::
+
+#### Sphere
+
+```xml
+<visual>
+  <geometry>
+    <sphere radius="0.1"/>
+  </geometry>
+</visual>
+```
+
+**Example - Joint Sphere**:
+```xml
+<link name="shoulder_ball">
+  <visual>
+    <geometry>
+      <sphere radius="0.06"/>
+    </geometry>
+    <material name="white">
+      <color rgba="0.9 0.9 0.9 1"/>
+    </material>
+  </visual>
+</link>
+```
+
+### Mesh Files
+
+For complex shapes, use 3D mesh files:
+
+```xml
+<visual>
+  <geometry>
+    <mesh filename="package://my_robot_description/meshes/head.dae" scale="1 1 1"/>
+  </geometry>
+</visual>
+```
+
+**Supported formats**:
+- **STL**: Simple, no color (ASCII or binary)
+- **DAE** (Collada): Supports colors, textures, animations
+- **OBJ**: Wavefront format with materials
+
+**Example - Robot Head**:
+```xml
+<link name="head">
+  <visual>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://humanoid_description/meshes/head.dae"/>
+    </geometry>
+  </visual>
+</link>
+```
+
+#### Package Path Syntax
+
+```
+package://<package_name>/relative/path/to/file
+```
+
+Examples:
+```
+package://my_robot/meshes/arm.stl
+package://humanoid_description/meshes/torso.dae
+```
+
+:::warning
+Mesh paths use `package://` URIs, not absolute file paths. This ensures portability across systems.
+:::
+
+#### Mesh Scaling
+
+```xml
+<mesh filename="package://robot/meshes/part.dae" scale="0.001 0.001 0.001"/>
+```
+
+Common scales:
+- `1 1 1`: Default (meters if exported in meters)
+- `0.001 0.001 0.001`: Millimeters to meters conversion
+- `2 2 2`: Double size
+
+### Materials and Colors
+
+Define materials inline or globally:
+
+#### Inline Material
+
+```xml
+<visual>
+  <geometry>
+    <box size="0.5 0.3 0.2"/>
+  </geometry>
+  <material name="blue">
+    <color rgba="0 0 0.8 1"/>
+  </material>
+</visual>
+```
+
+#### Global Material (Reusable)
+
+```xml
+<robot name="my_robot">
+  <!-- Define material once -->
+  <material name="orange">
+    <color rgba="1.0 0.5 0.0 1.0"/>
+  </material>
+
+  <!-- Use multiple times -->
+  <link name="link1">
+    <visual>
+      <geometry><box size="0.1 0.1 0.1"/></geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <link name="link2">
+    <visual>
+      <geometry><box size="0.2 0.1 0.1"/></geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+</robot>
+```
+
+#### RGBA Format
+
+```xml
+<color rgba="red green blue alpha"/>
+```
+
+- **red, green, blue**: 0.0 to 1.0
+- **alpha**: 0.0 (transparent) to 1.0 (opaque)
+
+Examples:
+```xml
+<color rgba="1 0 0 1"/>      <!-- Red -->
+<color rgba="0 1 0 1"/>      <!-- Green -->
+<color rgba="0 0 1 1"/>      <!-- Blue -->
+<color rgba="1 1 1 1"/>      <!-- White -->
+<color rgba="0 0 0 1"/>      <!-- Black -->
+<color rgba="0.5 0.5 0.5 1"/> <!-- Gray -->
+<color rgba="1 0.5 0 0.5"/>  <!-- Orange, 50% transparent -->
+```
+
+## Collision Geometry
+
+Collision geometry defines physical boundaries for:
+- Physics simulation
+- Collision detection
+- Contact forces
+
+### Why Separate Collision?
+
+**Performance**: Simplified shapes compute faster
+**Accuracy**: Complex visual meshes slow down physics
+
+### Collision Tags
+
+```xml
+<collision>
+  <origin xyz="0 0 0" rpy="0 0 0"/>
+  <geometry>
+    <box size="0.5 0.3 0.2"/>
+  </geometry>
+</collision>
+```
+
+Same geometry types as visual: box, cylinder, sphere, mesh.
+
+### Example: Visual vs Collision
+
+```xml
+<link name="robot_arm">
+  <!-- Detailed visual -->
+  <visual>
+    <geometry>
+      <mesh filename="package://robot/meshes/arm_detailed.dae"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="0.8 0.8 0.9 1"/>
+    </material>
+  </visual>
+
+  <!-- Simplified collision -->
+  <collision>
+    <geometry>
+      <cylinder radius="0.05" length="0.4"/>
+    </geometry>
+  </collision>
+</link>
+```
+
+Visual uses detailed mesh. Collision uses simple cylinder.
+
+### Collision Best Practices
+
+#### 1. Use Primitive Shapes When Possible
+
+```xml
+<!-- Good - fast physics -->
+<collision>
+  <geometry>
+    <box size="0.6 0.4 0.2"/>
+  </geometry>
+</collision>
+
+<!-- Avoid - slow physics -->
+<collision>
+  <geometry>
+    <mesh filename="package://robot/meshes/chassis_complex.stl"/>
+  </geometry>
+</collision>
+```
+
+#### 2. Approximate Complex Shapes
+
+Break complex shapes into multiple simple collision elements:
+
+```xml
+<link name="humanoid_torso">
+  <!-- Visual: detailed mesh -->
+  <visual>
+    <geometry>
+      <mesh filename="package://humanoid/meshes/torso.dae"/>
+    </geometry>
+  </visual>
+
+  <!-- Collision: approximation with 3 boxes -->
+  <collision name="torso_upper">
+    <origin xyz="0 0 0.2" rpy="0 0 0"/>
+    <geometry>
+      <box size="0.3 0.4 0.2"/>
+    </geometry>
+  </collision>
+
+  <collision name="torso_middle">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <box size="0.3 0.4 0.15"/>
+    </geometry>
+  </collision>
+
+  <collision name="torso_lower">
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <geometry>
+      <box size="0.28 0.35 0.1"/>
+    </geometry>
+  </collision>
+</link>
+```
+
+#### 3. Match Approximate Bounds
+
+Collision should roughly match visual bounds:
+
+```xml
+<link name="leg_segment">
+  <visual>
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.045" length="0.4"/>
+    </geometry>
+  </visual>
+
+  <!-- Collision slightly larger for safety margin -->
+  <collision>
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.05" length="0.4"/>
+    </geometry>
+  </collision>
+</link>
+```
+
+## Complete Link Example
+
+```xml title="complete_link.urdf"
+<link name="forearm">
+  <!-- Visual: detailed appearance -->
+  <visual>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://humanoid/meshes/forearm.dae" scale="1 1 1"/>
+    </geometry>
+    <material name="skin_tone">
+      <color rgba="0.95 0.8 0.7 1"/>
+    </material>
+  </visual>
+
+  <!-- Collision: simplified for physics -->
+  <collision>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.04" length="0.3"/>
+    </geometry>
+  </collision>
+
+  <!-- Inertial properties (covered in 3.4) -->
+  <inertial>
+    <mass value="0.8"/>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <inertia ixx="0.002" ixy="0" ixz="0"
+             iyy="0.002" iyz="0" izz="0.0003"/>
+  </inertial>
+</link>
+```
+
+## Organizing Mesh Files
+
+### Directory Structure
+
+```
+my_robot_description/
+├── urdf/
+│   └── robot.urdf
+├── meshes/
+│   ├── visual/
+│   │   ├── head.dae
+│   │   ├── torso.dae
+│   │   └── arm.dae
+│   └── collision/
+│       ├── head_collision.stl
+│       └── torso_collision.stl
+├── config/
+└── launch/
+```
+
+### File Naming Convention
+
+- Visual: `part_name.dae` or `part_name.stl`
+- Collision: `part_name_collision.stl`
+
+Example:
+```
+meshes/visual/left_foot.dae
+meshes/collision/left_foot_collision.stl
+```
+
+## Creating Mesh Files
+
+### From CAD Software
+
+1. **Design in CAD** (SolidWorks, Fusion 360, FreeCAD)
+2. **Export as**:
+   - COLLADA (.dae) for visual with colors
+   - STL (.stl) for simple geometry
+3. **Simplify collision mesh**:
+   - Reduce polygon count
+   - Use primitive shapes when possible
+4. **Export collision separately** as STL
+
+### Mesh Tools
+
+- **Blender**: Open-source 3D modeling
+- **MeshLab**: Mesh simplification and repair
+- **FreeCAD**: Parametric CAD with URDF export
+
+### Mesh Simplification Example (Blender)
+
+1. Import high-detail mesh
+2. Select object
+3. Add Modifier → Decimate
+4. Set Ratio: 0.1 (reduce to 10% of faces)
+5. Apply modifier
+6. Export as STL for collision geometry
+
+## Common Issues
+
+### Issue 1: Missing Mesh Files
+
+```
+Error: Could not find mesh file: package://robot/meshes/arm.dae
+```
+
+**Fix**:
+- Check file exists in package
+- Verify package name is correct
+- Build/install package: `colcon build`
+
+### Issue 2: Incorrect Scale
+
+Mesh appears tiny or huge in RViz.
+
+**Fix**:
+```xml
+<!-- If mesh is in millimeters, scale to meters -->
+<mesh filename="package://robot/meshes/part.stl" scale="0.001 0.001 0.001"/>
+```
+
+### Issue 3: Slow Physics Simulation
+
+**Cause**: Complex collision meshes
+
+**Fix**: Simplify collision geometry or use primitive shapes
+
+## Visualization Tips
+
+### RViz Display Options
+
+In RViz:
+1. Add → RobotModel
+2. Display → Visual Enabled (shows visual geometry)
+3. Display → Collision Enabled (shows collision geometry)
+4. Toggle Alpha to see both overlaid
+
+### Viewing Collision in Gazebo
+
+In Gazebo:
+- View → Collisions (shows wireframe collision geometry)
+- View → Transparent (see collisions through visual)
+
+## Summary
+
+- **Visual geometry**: Detailed appearance for rendering
+- **Collision geometry**: Simplified boundaries for physics
+- Primitive shapes: box, cylinder, sphere
+- Mesh files: STL (simple), DAE (with materials)
+- Package paths: `package://<pkg>/meshes/file.ext`
+- Materials: RGBA colors (0.0-1.0)
+- Best practice: Use primitive collision shapes for performance
+- Separate visual and collision for complex robots
+
+## Next Steps
+
+Continue to [3.3 Xacro Macros & Properties](./3.3-xacro-macros.mdx) to learn how to make URDF more maintainable with macros and variables.
+
+**Related topics**:
+- [3.1 URDF Basics](./3.1-urdf-basics.mdx)
+- [3.4 Inertial Properties](./3.4-inertial-physics.mdx)
+- [Chapter 3 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a link with detailed visual mesh and simple collision box
+2. Make a wheel with cylinder geometry
+3. Define a robot with multiple materials
+4. View visual vs collision geometry in RViz

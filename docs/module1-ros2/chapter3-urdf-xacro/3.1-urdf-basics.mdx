@@ -1,0 +1,432 @@
+# 3.1 URDF Basics - Links & Joints
+
+**Estimated Reading Time**: 12 minutes
+**Prerequisites**: Chapter 1 & 2
+**Difficulty**: Intermediate
+
+## Introduction
+
+URDF (Unified Robot Description Format) is XML that describes robot structure. It defines links (rigid parts) and joints (connections between parts).
+
+Think of URDF as a blueprint. Links are like bones. Joints are like where bones connect. Together, they form a kinematic tree.
+
+## What is URDF?
+
+URDF is an XML format with specific tags:
+- `<robot>`: Root element containing everything
+- `<link>`: Rigid body part (chassis, arm, wheel)
+- `<joint>`: Connection between two links
+- `<visual>`: How link looks
+- `<collision>`: Physical boundaries for
+
+ collisions
+- `<inertial>`: Mass and inertia properties
+
+### Basic URDF Structure
+
+```xml
+<?xml version="1.0"?>
+<robot name="my_robot">
+  <link name="base_link">
+    <!-- Link properties here -->
+  </link>
+
+  <joint name="joint1" type="revolute">
+    <!-- Joint properties here -->
+  </joint>
+
+  <link name="child_link">
+    <!-- Another link -->
+  </link>
+</robot>
+```
+
+## Links - The Rigid Parts
+
+A link represents a rigid body. It has:
+- **Name**: Unique identifier
+- **Visual**: How it appears
+- **Collision**: Boundaries for physics
+- **Inertial**: Mass properties
+
+### Simple Link Example
+
+```xml title="simple_link.urdf"
+<link name="base_link">
+  <visual>
+    <geometry>
+      <box size="0.6 0.4 0.2"/>
+    </geometry>
+    <material name="blue">
+      <color rgba="0 0 0.8 1"/>
+    </material>
+  </visual>
+</link>
+```
+
+This creates a blue box (60cm × 40cm × 20cm).
+
+### Link with Origin
+
+```xml
+<link name="arm_link">
+  <visual>
+    <origin xyz="0 0 0.2" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.05" length="0.4"/>
+    </geometry>
+    <material name="gray">
+      <color rgba="0.5 0.5 0.5 1"/>
+    </material>
+  </visual>
+</link>
+```
+
+**origin**: Position and rotation of geometry relative to link frame
+- `xyz`: Translation (x, y, z) in meters
+- `rpy`: Rotation (roll, pitch, yaw) in radians
+
+## Joints - The Connections
+
+Joints connect two links. They define:
+- **Parent link**: Fixed reference
+- **Child link**: Moves relative to parent
+- **Type**: How child moves
+- **Limits**: Movement constraints
+
+### Joint Types
+
+ROS 2 supports 6 joint types:
+
+| Type | Description | Example Use |
+|------|-------------|-------------|
+| `fixed` | No movement | Sensor mount |
+| `revolute` | Rotation with limits | Elbow, knee |
+| `continuous` | Unlimited rotation | Wheel |
+| `prismatic` | Linear motion | Elevator, telescope |
+| `floating` | 6 DOF (position + orientation) | Floating base |
+| `planar` | Movement in plane | Omni wheels |
+
+### Revolute Joint Example
+
+```xml title="revolute_joint.urdf"
+<joint name="shoulder_joint" type="revolute">
+  <parent link="torso"/>
+  <child link="upper_arm"/>
+  <origin xyz="0 0.2 0.4" rpy="0 0 0"/>
+  <axis xyz="0 1 0"/>
+  <limit lower="-1.57" upper="1.57" effort="100" velocity="1.0"/>
+</joint>
+```
+
+**Explanation**:
+- **parent**: Torso is fixed reference
+- **child**: Upper arm moves
+- **origin**: Joint location (20cm to side, 40cm up from torso origin)
+- **axis**: Rotates around Y-axis (0 1 0)
+- **limit**:
+  - `lower`/`upper`: ±90° (±1.57 radians)
+  - `effort`: Maximum torque (100 Nm)
+  - `velocity`: Maximum speed (1.0 rad/s)
+
+### Fixed Joint Example
+
+```xml
+<joint name="camera_joint" type="fixed">
+  <parent link="head"/>
+  <child link="camera"/>
+  <origin xyz="0.1 0 0.05" rpy="0 0 0"/>
+</joint>
+```
+
+Fixed joints don't move. Use them for sensors or static attachments.
+
+### Continuous Joint Example
+
+```xml
+<joint name="wheel_joint" type="continuous">
+  <parent link="chassis"/>
+  <child link="wheel"/>
+  <origin xyz="0 0.3 -0.1" rpy="0 0 0"/>
+  <axis xyz="0 1 0"/>
+</joint>
+```
+
+Continuous joints have no limits. Perfect for wheels.
+
+## The Kinematic Tree
+
+URDF creates a tree structure:
+- One **root link** (usually `base_link`)
+- Joints define **parent-child relationships**
+- Each link has **exactly one parent joint** (except root)
+- Links can have **multiple child joints**
+
+### Example: Simple Arm
+
+```xml title="simple_arm.urdf"
+<?xml version="1.0"?>
+<robot name="simple_arm">
+
+  <!-- Base (root link) -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.2 0.2 0.1"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Shoulder joint connects base to upper arm -->
+  <joint name="shoulder" type="revolute">
+    <parent link="base_link"/>
+    <child link="upper_arm"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="1.0"/>
+  </joint>
+
+  <!-- Upper arm link -->
+  <link name="upper_arm">
+    <visual>
+      <origin xyz="0 0 0.15" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.03" length="0.3"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Elbow joint connects upper to lower arm -->
+  <joint name="elbow" type="revolute">
+    <parent link="upper_arm"/>
+    <child link="lower_arm"/>
+    <origin xyz="0 0 0.3" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="2.36" effort="30" velocity="1.0"/>
+  </joint>
+
+  <!-- Lower arm link -->
+  <link name="lower_arm">
+    <visual>
+      <origin xyz="0 0 0.12" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.025" length="0.24"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 0.8 0 1"/>
+      </material>
+    </visual>
+  </link>
+
+</robot>
+```
+
+**Tree structure**:
+```
+base_link (root)
+  └─ shoulder joint
+      └─ upper_arm
+          └─ elbow joint
+              └─ lower_arm
+```
+
+## Coordinate Frames
+
+Each link has its own coordinate frame. Joint origins define transformations between frames.
+
+### Frame Convention
+
+ROS 2 uses right-handed coordinate system:
+- **X**: Forward (red)
+- **Y**: Left (green)
+- **Z**: Up (blue)
+
+### Transform Chain Example
+
+```
+base_link (0, 0, 0)
+  → shoulder joint @ (0, 0, 0.05)
+    → upper_arm (0, 0, 0.05)
+      → elbow joint @ (0, 0, 0.3)
+        → lower_arm (0, 0, 0.35)
+```
+
+Each joint adds a transformation.
+
+## Visualizing URDF in RViz
+
+### Step 1: Create URDF File
+
+Save the simple_arm.urdf example to a file.
+
+### Step 2: Check URDF Syntax
+
+```bash
+check_urdf simple_arm.urdf
+```
+
+Output:
+```
+robot name is: simple_arm
+---------- Successfully Parsed XML ---------------
+root Link: base_link has 1 child(ren)
+    child(1):  upper_arm
+        child(1):  lower_arm
+```
+
+### Step 3: View in RViz
+
+```bash
+ros2 launch urdf_tutorial display.launch.py model:=simple_arm.urdf
+```
+
+This opens RViz with:
+- Robot model displayed
+- Joint state sliders
+- TF frames visualization
+
+You can move the sliders to see joints articulate!
+
+## Common Mistakes
+
+### Mistake 1: Forgetting Root Link
+
+```xml
+<!-- Wrong - no root link -->
+<robot name="bad_robot">
+  <joint name="joint1" type="revolute">
+    <parent link="nonexistent"/>
+    <child link="link1"/>
+  </joint>
+</robot>
+```
+
+Every robot needs a root link that isn't a child of any joint.
+
+### Mistake 2: Circular Dependencies
+
+```xml
+<!-- Wrong - circular parent-child -->
+<joint name="j1" type="fixed">
+  <parent link="link_a"/>
+  <child link="link_b"/>
+</joint>
+
+<joint name="j2" type="fixed">
+  <parent link="link_b"/>
+  <child link="link_a"/>  <!-- Circular! -->
+</joint>
+```
+
+The kinematic tree must be acyclic (no loops).
+
+### Mistake 3: Wrong Axis Definition
+
+```xml
+<!-- Wrong - normalized axis required -->
+<joint name="shoulder" type="revolute">
+  <axis xyz="1 1 1"/>  <!-- Should be normalized -->
+</joint>
+
+<!-- Correct -->
+<joint name="shoulder" type="revolute">
+  <axis xyz="0.577 0.577 0.577"/>  <!-- Normalized -->
+</joint>
+```
+
+Axis vectors should be unit length (magnitude = 1).
+
+### Mistake 4: Inverted Parent-Child
+
+```xml
+<!-- Wrong - child should be the moving part -->
+<joint name="shoulder" type="revolute">
+  <parent link="upper_arm"/>  <!-- Moving part -->
+  <child link="base_link"/>   <!-- Fixed part -->
+</joint>
+
+<!-- Correct -->
+<joint name="shoulder" type="revolute">
+  <parent link="base_link"/>  <!-- Fixed -->
+  <child link="upper_arm"/>   <!-- Moving -->
+</joint>
+```
+
+Parent should be the fixed reference, child moves.
+
+## Best Practices
+
+### 1. Use Descriptive Names
+
+```xml
+<!-- Good -->
+<link name="left_knee"/>
+<joint name="left_knee_pitch"/>
+
+<!-- Bad -->
+<link name="l1"/>
+<joint name="j5"/>
+```
+
+### 2. Follow Naming Conventions
+
+- Links: `[prefix_]part_name` (e.g., `left_thigh`, `base_link`)
+- Joints: `[prefix_]part_joint[_type]` (e.g., `shoulder_pitch`, `wheel_joint`)
+
+### 3. Set Reasonable Limits
+
+```xml
+<!-- Good - realistic limits -->
+<limit lower="-1.57" upper="1.57" effort="100" velocity="1.0"/>
+
+<!-- Bad - unrealistic -->
+<limit lower="-100" upper="100" effort="9999" velocity="1000"/>
+```
+
+### 4. Origin at Joint Center
+
+Place link origins at joint centers for easier calculations:
+
+```xml
+<link name="thigh">
+  <visual>
+    <!-- Geometry centered at joint -->
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.05" length="0.4"/>
+    </geometry>
+  </visual>
+</link>
+```
+
+## Summary
+
+- URDF is XML for describing robot structure
+- **Links** are rigid body parts with visual/collision/inertial properties
+- **Joints** connect links with parent-child relationships
+- Joint types: fixed, revolute, continuous, prismatic, floating, planar
+- URDF forms a kinematic **tree** (no loops)
+- Each link has its own **coordinate frame**
+- Use `check_urdf` to validate syntax
+- Visualize in RViz with `display.launch.py`
+
+## Next Steps
+
+Continue to [3.2 Visual & Collision Geometry](./3.2-visual-collision.mdx) to learn how to define robot appearance and physical boundaries.
+
+**Related topics**:
+- [3.3 Xacro Macros](./3.3-xacro-macros.mdx)
+- [3.4 Inertial Properties](./3.4-inertial-physics.mdx)
+- [Chapter 3 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a 3-link robot arm with 2 revolute joints
+2. Add a fixed camera mount to the end
+3. Visualize it in RViz and move the joints
+4. Experiment with different joint types

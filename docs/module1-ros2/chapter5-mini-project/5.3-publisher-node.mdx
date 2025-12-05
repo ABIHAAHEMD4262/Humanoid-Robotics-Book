@@ -1,0 +1,686 @@
+# 5.3 Implementing the Publisher Node
+
+:::tip Estimated Time
+**15 minutes**
+:::
+
+Now for the exciting part—bringing our gait generator into the ROS 2 ecosystem! In this section, we'll create a publisher node that sends joint commands at real-time control frequencies. This is where your mathematical trajectories become actual robot motion.
+
+## Understanding the Publisher Architecture
+
+### What We're Building
+
+Our publisher node will:
+
+1. **Create a GaitGenerator instance** with configurable parameters
+2. **Set up a timer** that triggers at 50 Hz (every 20 milliseconds)
+3. **Compute joint angles** at each timer tick using the gait generator
+4. **Publish JointState messages** containing all joint positions
+5. **Support dynamic reconfiguration** through ROS 2 parameters
+
+### Why 50 Hz?
+
+Real-time robot control typically operates at **50-200 Hz**. We're using 50 Hz because:
+
+- ✅ Fast enough for smooth motion visualization
+- ✅ Matches common robot control frequencies
+- ✅ Provides 20ms update intervals (responsive)
+- ✅ Not too demanding on CPU resources
+
+## Step 1: Understanding JointState Messages
+
+Before we write code, let's understand the message type we'll publish:
+
+```bash
+ros2 interface show sensor_msgs/msg/JointState
+```
+
+You'll see:
+```
+std_msgs/Header header
+string[] name          # Joint names
+float64[] position     # Joint positions in radians
+float64[] velocity     # Joint velocities (optional)
+float64[] effort       # Joint efforts/torques (optional)
+```
+
+For our gait publisher, we'll populate:
+- **header**: Timestamp for synchronization
+- **name**: List of our 6 joint names
+- **position**: The computed angles from our gait generator
+
+## Step 2: Create the Publisher Node
+
+Let's create the main publisher node:
+
+```python title="gait_publisher/gait_publisher_node.py"
+#!/usr/bin/env python3
+"""
+Gait Publisher Node for Humanoid Walking
+
+Publishes joint state trajectories for bipedal walking motion.
+Uses the GaitGenerator to compute smooth, periodic joint angles.
+"""
+
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from rcl_interfaces.msg import ParameterDescriptor
+from gait_publisher.math.gait_generator import GaitGenerator
+
+
+class GaitPublisherNode(Node):
+    """
+    ROS 2 node that publishes walking gait trajectories.
+
+    This node generates and publishes JointState messages at a fixed
+    control frequency (50 Hz by default), enabling visualization and
+    simulation of humanoid walking motion.
+    """
+
+    def __init__(self):
+        super().__init__('gait_publisher')
+
+        # Declare parameters with descriptions
+        self.declare_parameter(
+            'publish_frequency',
+            50.0,
+            ParameterDescriptor(description='Joint state publish frequency (Hz)')
+        )
+        self.declare_parameter(
+            'step_frequency',
+            0.5,
+            ParameterDescriptor(description='Walking step frequency (Hz)')
+        )
+        self.declare_parameter(
+            'step_height',
+            0.08,
+            ParameterDescriptor(description='Step height in meters')
+        )
+        self.declare_parameter(
+            'stride_length',
+            0.15,
+            ParameterDescriptor(description='Stride length in meters')
+        )
+
+        # Get parameter values
+        self.publish_freq = self.get_parameter('publish_frequency').value
+        step_freq = self.get_parameter('step_frequency').value
+        step_height = self.get_parameter('step_height').value
+        stride_length = self.get_parameter('stride_length').value
+
+        # Create gait generator
+        self.gait_generator = GaitGenerator(
+            frequency=step_freq,
+            step_height=step_height,
+            stride_length=stride_length
+        )
+
+        # Create publisher
+        self.joint_pub = self.create_publisher(
+            JointState,
+            'joint_states',
+            10  # Queue size
+        )
+
+        # Define joint names (must match URDF!)
+        self.joint_names = [
+            'left_hip_joint',
+            'left_knee_joint',
+            'left_ankle_joint',
+            'right_hip_joint',
+            'right_knee_joint',
+            'right_ankle_joint',
+        ]
+
+        # Create timer for periodic publishing
+        timer_period = 1.0 / self.publish_freq  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+
+        # Initialize time tracking
+        self.start_time = self.get_clock().now()
+
+        # Log startup information
+        self.get_logger().info('Gait Publisher Node started')
+        self.get_logger().info(f'Publishing at {self.publish_freq} Hz')
+        self.get_logger().info(f'Step frequency: {step_freq} Hz')
+        self.get_logger().info(f'Step height: {step_height} m')
+        self.get_logger().info(f'Stride length: {stride_length} m')
+
+    def timer_callback(self):
+        """
+        Timer callback that computes and publishes joint states.
+
+        Called at the publish frequency (default 50 Hz).
+        Computes current joint angles and publishes them.
+        """
+        # Calculate elapsed time since start
+        current_time = self.get_clock().now()
+        elapsed = (current_time - self.start_time).nanoseconds / 1e9  # Convert to seconds
+
+        # Get joint angles from gait generator
+        joint_angles = self.gait_generator.get_joint_angles(elapsed)
+
+        # Create and populate JointState message
+        msg = JointState()
+        msg.header.stamp = current_time.to_msg()
+        msg.header.frame_id = ''  # Not needed for joint states
+
+        msg.name = self.joint_names
+        msg.position = [
+            joint_angles['left_hip_joint'],
+            joint_angles['left_knee_joint'],
+            joint_angles['left_ankle_joint'],
+            joint_angles['right_hip_joint'],
+            joint_angles['right_knee_joint'],
+            joint_angles['right_ankle_joint'],
+        ]
+
+        # Velocities and efforts are optional; we'll leave them empty
+        msg.velocity = []
+        msg.effort = []
+
+        # Publish the message
+        self.joint_pub.publish(msg)
+
+    def update_gait_parameters(self):
+        """
+        Update gait generator with current parameter values.
+
+        This allows dynamic reconfiguration while the node is running.
+        """
+        step_freq = self.get_parameter('step_frequency').value
+        step_height = self.get_parameter('step_height').value
+        stride_length = self.get_parameter('stride_length').value
+
+        self.gait_generator.set_parameters(
+            frequency=step_freq,
+            step_height=step_height,
+            stride_length=stride_length
+        )
+
+        self.get_logger().info('Gait parameters updated')
+
+
+def main(args=None):
+    """Main entry point for the gait publisher node."""
+    rclpy.init(args=args)
+
+    node = GaitPublisherNode()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.get_logger().info('Shutting down gait publisher')
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+## Step 3: Understanding the Code
+
+Let's break down the key components:
+
+### Parameters
+
+```python
+self.declare_parameter('publish_frequency', 50.0)
+```
+
+We declare parameters that can be:
+- Set via command line: `--ros-args -p step_height:=0.10`
+- Set in launch files
+- Changed at runtime with `ros2 param set`
+
+### Timer Setup
+
+```python
+timer_period = 1.0 / self.publish_freq  # 50 Hz = 0.02 seconds
+self.timer = self.create_timer(timer_period, self.timer_callback)
+```
+
+This creates a timer that calls `timer_callback` every 20ms (for 50 Hz).
+
+### Time Tracking
+
+```python
+elapsed = (current_time - self.start_time).nanoseconds / 1e9
+```
+
+We track elapsed time to pass to the gait generator. This ensures smooth, continuous motion.
+
+### Message Population
+
+```python
+msg.name = self.joint_names
+msg.position = [joint_angles['left_hip_joint'], ...]
+```
+
+We create a JointState message with names matching our URDF and positions from the gait generator.
+
+## Step 4: Register the Node in setup.py
+
+Update your `setup.py` to register the new node:
+
+```python title="setup.py" {33-34}
+from setuptools import find_packages, setup
+import os
+from glob import glob
+
+package_name = 'gait_publisher'
+
+setup(
+    name=package_name,
+    version='1.0.0',
+    packages=find_packages(exclude=['test']),
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'),
+         glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
+        (os.path.join('share', package_name, 'config'),
+         glob(os.path.join('config', '*.yaml'))),
+        (os.path.join('share', package_name, 'config'),
+         glob(os.path.join('config', '*.rviz'))),
+        (os.path.join('share', package_name, 'urdf'),
+         glob(os.path.join('urdf', '*.urdf'))),
+        (os.path.join('share', package_name, 'urdf'),
+         glob(os.path.join('urdf', '*.xacro'))),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='Your Name',
+    maintainer_email='your.email@example.com',
+    description='Walking gait trajectory publisher for humanoid robots',
+    license='Apache-2.0',
+    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'test_node = gait_publisher.test_node:main',
+            'gait_publisher_node = gait_publisher.gait_publisher_node:main',
+        ],
+    },
+)
+```
+
+## Step 5: Create a Launch File
+
+Launch files make starting your system easy. Let's create one:
+
+```python title="launch/gait_publisher.launch.py"
+#!/usr/bin/env python3
+"""
+Launch file for the gait publisher node.
+
+This launch file starts the gait publisher with configurable parameters.
+"""
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    """Generate launch description for gait publisher."""
+
+    # Declare launch arguments
+    step_frequency_arg = DeclareLaunchArgument(
+        'step_frequency',
+        default_value='0.5',
+        description='Walking step frequency in Hz'
+    )
+
+    step_height_arg = DeclareLaunchArgument(
+        'step_height',
+        default_value='0.08',
+        description='Step height in meters'
+    )
+
+    stride_length_arg = DeclareLaunchArgument(
+        'stride_length',
+        default_value='0.15',
+        description='Stride length in meters'
+    )
+
+    publish_frequency_arg = DeclareLaunchArgument(
+        'publish_frequency',
+        default_value='50.0',
+        description='Joint state publish frequency in Hz'
+    )
+
+    # Create the gait publisher node
+    gait_publisher_node = Node(
+        package='gait_publisher',
+        executable='gait_publisher_node',
+        name='gait_publisher',
+        output='screen',
+        parameters=[{
+            'step_frequency': LaunchConfiguration('step_frequency'),
+            'step_height': LaunchConfiguration('step_height'),
+            'stride_length': LaunchConfiguration('stride_length'),
+            'publish_frequency': LaunchConfiguration('publish_frequency'),
+        }]
+    )
+
+    return LaunchDescription([
+        step_frequency_arg,
+        step_height_arg,
+        stride_length_arg,
+        publish_frequency_arg,
+        gait_publisher_node,
+    ])
+```
+
+This launch file:
+- Defines configurable arguments with defaults
+- Creates the gait publisher node with those parameters
+- Outputs logs to the screen
+
+## Step 6: Build and Test
+
+Let's build and test our publisher:
+
+```bash
+# Navigate to workspace root
+cd ~/humanoid_ws
+
+# Build the package
+colcon build --packages-select gait_publisher
+
+# Source the workspace
+source install/setup.bash
+
+# Run the node directly
+ros2 run gait_publisher gait_publisher_node
+```
+
+You should see:
+```
+[INFO] [gait_publisher]: Gait Publisher Node started
+[INFO] [gait_publisher]: Publishing at 50.0 Hz
+[INFO] [gait_publisher]: Step frequency: 0.5 Hz
+[INFO] [gait_publisher]: Step height: 0.08 m
+[INFO] [gait_publisher]: Stride length: 0.15 m
+```
+
+### Verify Publishing
+
+In a new terminal, check that joint states are being published:
+
+```bash
+# Source your workspace
+source ~/humanoid_ws/install/setup.bash
+
+# Echo the joint states topic
+ros2 topic echo /joint_states --once
+```
+
+You should see output like:
+```yaml
+header:
+  stamp:
+    sec: 1234567890
+    nanosec: 123456789
+  frame_id: ''
+name:
+- left_hip_joint
+- left_knee_joint
+- left_ankle_joint
+- right_hip_joint
+- right_knee_joint
+- right_ankle_joint
+position:
+- 0.0234567
+- -0.0123456
+- 0.0012345
+- -0.0234567
+- -0.0123456
+- -0.0012345
+velocity: []
+effort: []
+```
+
+### Check Publishing Rate
+
+Verify the publishing frequency:
+
+```bash
+ros2 topic hz /joint_states
+```
+
+You should see:
+```
+average rate: 50.000
+	min: 0.020s max: 0.020s std dev: 0.00001s window: 50
+```
+
+## Step 7: Test with Launch File
+
+Now test with the launch file:
+
+```bash
+# Launch with default parameters
+ros2 launch gait_publisher gait_publisher.launch.py
+
+# Or launch with custom parameters
+ros2 launch gait_publisher gait_publisher.launch.py step_frequency:=0.8 step_height:=0.10
+```
+
+## Step 8: Create a Parameter Configuration File
+
+For easy configuration, let's create a YAML parameter file:
+
+```yaml title="config/gait_params.yaml"
+gait_publisher:
+  ros__parameters:
+    # Publishing configuration
+    publish_frequency: 50.0  # Hz
+
+    # Gait parameters
+    step_frequency: 0.5      # Hz (steps per second)
+    step_height: 0.08        # meters
+    stride_length: 0.15      # meters
+
+# Alternative configurations for different gaits
+
+# Fast walk
+# step_frequency: 0.8
+# step_height: 0.06
+# stride_length: 0.20
+
+# Slow walk
+# step_frequency: 0.3
+# step_height: 0.10
+# stride_length: 0.10
+
+# March (high steps)
+# step_frequency: 0.4
+# step_height: 0.15
+# stride_length: 0.08
+```
+
+Update the launch file to use this config:
+
+```python title="launch/gait_publisher.launch.py" {9,48-53}
+#!/usr/bin/env python3
+"""
+Launch file for the gait publisher node with parameter file support.
+"""
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+import os
+
+
+def generate_launch_description():
+    """Generate launch description for gait publisher."""
+
+    # Get package directory
+    pkg_share = get_package_share_directory('gait_publisher')
+    params_file = os.path.join(pkg_share, 'config', 'gait_params.yaml')
+
+    # Declare launch arguments
+    use_params_file_arg = DeclareLaunchArgument(
+        'use_params_file',
+        default_value='true',
+        description='Whether to use parameter file or launch arguments'
+    )
+
+    step_frequency_arg = DeclareLaunchArgument(
+        'step_frequency',
+        default_value='0.5',
+        description='Walking step frequency in Hz'
+    )
+
+    step_height_arg = DeclareLaunchArgument(
+        'step_height',
+        default_value='0.08',
+        description='Step height in meters'
+    )
+
+    stride_length_arg = DeclareLaunchArgument(
+        'stride_length',
+        default_value='0.15',
+        description='Stride length in meters'
+    )
+
+    # Create the gait publisher node
+    gait_publisher_node = Node(
+        package='gait_publisher',
+        executable='gait_publisher_node',
+        name='gait_publisher',
+        output='screen',
+        parameters=[params_file]  # Load from YAML file
+    )
+
+    return LaunchDescription([
+        use_params_file_arg,
+        step_frequency_arg,
+        step_height_arg,
+        stride_length_arg,
+        gait_publisher_node,
+    ])
+```
+
+## Step 9: Dynamic Parameter Updates
+
+Test changing parameters while the node is running:
+
+```bash
+# In terminal 1: Run the node
+ros2 run gait_publisher gait_publisher_node
+
+# In terminal 2: List parameters
+ros2 param list /gait_publisher
+
+# Change step height
+ros2 param set /gait_publisher step_height 0.12
+
+# Change step frequency
+ros2 param set /gait_publisher step_frequency 0.8
+```
+
+:::info Note
+Currently, changing parameters at runtime won't update the gait immediately because we haven't set up parameter callbacks. This is fine for our basic implementation, but you could add this as a stretch goal!
+:::
+
+## Checkpoint: What We've Built
+
+Let's review our accomplishments:
+
+✅ **Created a ROS 2 publisher node** that generates gait trajectories
+✅ **Integrated GaitGenerator** with ROS 2 timer callbacks
+✅ **Published JointState messages** at real-time frequency (50 Hz)
+✅ **Implemented configurable parameters** for gait tuning
+✅ **Created launch files** for easy system startup
+✅ **Added parameter configuration file** for different gait styles
+✅ **Verified publishing rate** and message content
+
+## Troubleshooting
+
+### Issue: Node doesn't publish anything
+
+**Check 1**: Verify the node is running:
+```bash
+ros2 node list
+```
+
+**Check 2**: Check for errors in the terminal output
+
+**Check 3**: Verify topic exists:
+```bash
+ros2 topic list
+```
+
+### Issue: Publishing rate is not 50 Hz
+
+**Solution**: Check CPU load. If your system is slow, reduce publish frequency:
+```bash
+ros2 run gait_publisher gait_publisher_node --ros-args -p publish_frequency:=25.0
+```
+
+### Issue: Import error for GaitGenerator
+
+**Solution**: Rebuild and source:
+```bash
+cd ~/humanoid_ws
+colcon build --packages-select gait_publisher
+source install/setup.bash
+```
+
+### Issue: Joint names don't match URDF
+
+**Solution**: Verify joint names in your URDF match those in `gait_publisher_node.py`:
+```bash
+grep "joint name=" install/gait_publisher/share/gait_publisher/urdf/simple_humanoid.urdf
+```
+
+## Testing Tips
+
+### Monitor Performance
+
+```bash
+# Watch CPU usage of the node
+top -p $(pgrep -f gait_publisher_node)
+
+# Monitor message statistics
+ros2 topic hz /joint_states
+ros2 topic bw /joint_states
+```
+
+### Visualize Joint Angles
+
+```bash
+# Plot joint positions in real-time
+ros2 run rqt_plot rqt_plot /joint_states/position[0]:position[3]
+```
+
+This plots left hip (index 0) and right hip (index 3) together—you should see them 180° out of phase!
+
+## Next Steps
+
+Fantastic work! You now have a fully functional gait publisher that generates and publishes walking trajectories at real-time control rates. Your node is properly integrated with ROS 2, uses standard message types, and supports configuration through parameters.
+
+In the final section, we'll bring everything together by visualizing your walking humanoid in RViz. This is where you'll see your robot come to life and walk!
+
+---
+
+## Navigation
+
+← [Previous: 5.2 Gait Mathematics](./5.2-gait-mathematics.mdx) | [Next: 5.4 Visualization & Testing →](./5.4-visualization-testing.mdx)
+
+**Chapter 5 Sections**:
+- [5.1 Project Setup](./5.1-project-setup.mdx)
+- [5.2 Gait Mathematics](./5.2-gait-mathematics.mdx)
+- **5.3 Publisher Node** (You are here)
+- [5.4 Visualization & Testing](./5.4-visualization-testing.mdx)

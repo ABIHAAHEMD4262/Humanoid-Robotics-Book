@@ -1,0 +1,573 @@
+# 4.3 Building with colcon
+
+*Estimated reading time: 9 minutes*
+
+You've created packages and declared dependencies—now it's time to build them into working software. Meet **colcon**, ROS 2's build tool that transforms your source code into executable nodes.
+
+Think of colcon as a smart construction manager: it figures out the order to build packages (based on dependencies), compiles code, runs tests, and installs everything in the right place.
+
+## What is colcon?
+
+**colcon** (collective construction) is a command-line tool that:
+- Builds multiple packages in the correct order
+- Supports different build systems (Python, CMake, etc.)
+- Handles dependencies between packages
+- Runs tests and generates reports
+- Works across different operating systems
+
+Unlike tools that only handle one language, colcon can build Python, C++, and mixed workspaces—all in one command.
+
+## Basic Build Command
+
+The most common command you'll use:
+
+```bash
+cd ~/my_robot_ws
+colcon build
+```
+
+This will:
+1. Discover all packages in `src/`
+2. Determine build order based on dependencies
+3. Build each package
+4. Install results to `install/`
+
+Output:
+```
+Starting >>> my_first_package
+Finished <<< my_first_package [0.50s]
+Starting >>> my_second_package
+Finished <<< my_second_package [0.45s]
+
+Summary: 2 packages finished [1.02s]
+```
+
+## Understanding the Build Process
+
+When you run `colcon build`, here's what happens:
+
+```
+Source Code (src/)
+       ↓
+   [Build System]
+       ↓
+Compiled Code (build/)
+       ↓
+  [Installation]
+       ↓
+Ready to Use (install/)
+```
+
+### The Directories
+
+```
+my_robot_ws/
+├── src/                    # Your source code (INPUT)
+├── build/                  # Temporary build artifacts
+│   ├── package1/          # Compiled .o files, CMake cache, etc.
+│   └── package2/
+├── install/                # Final installed packages (OUTPUT)
+│   ├── package1/
+│   ├── package2/
+│   └── setup.bash         # Source this to use packages
+└── log/                    # Build logs for debugging
+    └── latest_build/
+```
+
+:::tip
+After building, you must source the setup script to use your packages:
+```bash
+source install/setup.bash
+```
+:::
+
+## Selective Building
+
+Build specific packages instead of everything:
+
+### Build One Package
+
+```bash
+colcon build --packages-select my_package
+```
+
+### Build Multiple Packages
+
+```bash
+colcon build --packages-select package1 package2 package3
+```
+
+### Build Package and Dependencies
+
+```bash
+colcon build --packages-up-to my_package
+```
+
+This builds `my_package` and all packages it depends on (but not packages that depend on it).
+
+### Skip Packages
+
+```bash
+colcon build --packages-skip broken_package
+```
+
+### Build All Except Some
+
+```bash
+colcon build --packages-skip test_package1 test_package2
+```
+
+## Build Flags and Options
+
+Customize your build with these useful flags:
+
+### Parallel Building
+
+Build multiple packages simultaneously (faster):
+
+```bash
+colcon build --parallel-workers 4
+```
+
+Or use all CPU cores:
+
+```bash
+colcon build --parallel-workers $(nproc)
+```
+
+:::warning
+More workers = faster builds but more RAM usage. If builds fail with memory errors, reduce workers.
+:::
+
+### Symlink Install (Python Only)
+
+For Python packages, create symlinks instead of copying files:
+
+```bash
+colcon build --symlink-install
+```
+
+**Benefits**:
+- Edit Python code and see changes immediately (no rebuild)
+- Faster builds
+- Saves disk space
+
+**When to use**:
+- During development of Python nodes
+- When iterating quickly on Python code
+
+**When NOT to use**:
+- C++ packages (doesn't work)
+- Before deployment (use regular install)
+
+### Continue on Error
+
+Keep building even if one package fails:
+
+```bash
+colcon build --continue-on-error
+```
+
+### CMake Arguments
+
+Pass arguments to CMake (for C++ packages):
+
+```bash
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+Build types:
+- `Debug`: Includes debug symbols, no optimization
+- `Release`: Optimized, no debug info (faster runtime)
+- `RelWithDebInfo`: Optimized + debug symbols
+
+### Verbose Output
+
+See detailed build output:
+
+```bash
+colcon build --event-handlers console_direct+
+```
+
+Useful for:
+- Debugging build failures
+- Understanding what's happening
+- Seeing compiler warnings
+
+## Cleaning Builds
+
+Sometimes you need a fresh start:
+
+### Remove build and install directories:
+
+```bash
+rm -rf build install log
+colcon build
+```
+
+### Clean specific package:
+
+```bash
+rm -rf build/my_package install/my_package
+colcon build --packages-select my_package
+```
+
+:::tip
+There's no `colcon clean` command, so you manually delete the directories.
+:::
+
+## Common Build Workflows
+
+### 1. First Time Setup
+
+```bash
+cd ~/my_robot_ws
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install
+source install/setup.bash
+```
+
+### 2. Daily Development (Python)
+
+```bash
+# Edit Python code...
+# No rebuild needed with --symlink-install!
+source install/setup.bash  # Refresh environment
+ros2 run my_package my_node
+```
+
+### 3. Daily Development (C++)
+
+```bash
+# Edit C++ code...
+colcon build --packages-select my_cpp_package
+source install/setup.bash
+ros2 run my_cpp_package my_node
+```
+
+### 4. Quick Test Build
+
+```bash
+colcon build --packages-up-to my_package --symlink-install
+```
+
+### 5. Production Build
+
+```bash
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+## Sourcing Setup Scripts
+
+After building, you **must** source the setup script to use your packages:
+
+### Bash (Linux/Mac)
+
+```bash
+source install/setup.bash
+```
+
+### Zsh (Mac)
+
+```bash
+source install/setup.zsh
+```
+
+### PowerShell (Windows)
+
+```powershell
+.\install\setup.ps1
+```
+
+### Add to bashrc (Optional)
+
+To automatically source on every new terminal:
+
+```bash
+echo "source ~/my_robot_ws/install/setup.bash" >> ~/.bashrc
+```
+
+:::warning
+Be careful with automatic sourcing—it can cause conflicts if you work on multiple workspaces.
+:::
+
+## Troubleshooting Build Errors
+
+### Error 1: Package Not Found
+
+**Symptom**:
+```
+CMake Error: Could not find package 'geometry_msgs'
+```
+
+**Diagnosis**: Missing dependency
+
+**Solution**:
+1. Add to package.xml:
+```xml
+<depend>geometry_msgs</depend>
+```
+
+2. Install dependencies:
+```bash
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+3. Rebuild:
+```bash
+colcon build --packages-select my_package
+```
+
+### Error 2: Python Module Not Found at Runtime
+
+**Symptom**:
+```
+ModuleNotFoundError: No module named 'my_package.my_node'
+```
+
+**Diagnosis**: Forgot to source setup script
+
+**Solution**:
+```bash
+source install/setup.bash
+ros2 run my_package my_node
+```
+
+### Error 3: Changes Not Taking Effect
+
+**Symptom**: You edited code but node still runs old version
+
+**Diagnosis**:
+- C++ package not rebuilt
+- Setup script not sourced
+
+**Solution**:
+```bash
+colcon build --packages-select my_package
+source install/setup.bash
+```
+
+### Error 4: Build Fails with No Errors Shown
+
+**Symptom**: "Failed" message but no error details
+
+**Solution**: Check the log files:
+```bash
+cat log/latest_build/my_package/stdout_stderr.log
+```
+
+Or rebuild with verbose output:
+```bash
+colcon build --packages-select my_package --event-handlers console_direct+
+```
+
+### Error 5: Setup Entry Point Not Found
+
+**Symptom**:
+```
+Package 'my_package' not found
+```
+
+**Diagnosis**: Entry point not registered in setup.py
+
+**Solution**: Verify setup.py has correct entry points:
+```python
+entry_points={
+    'console_scripts': [
+        'my_node = my_package.my_node:main',
+    ],
+},
+```
+
+## Build Testing
+
+Run tests during build:
+
+```bash
+colcon build --packages-select my_package
+colcon test --packages-select my_package
+```
+
+See test results:
+
+```bash
+colcon test-result --all
+```
+
+Verbose test output:
+
+```bash
+colcon test --packages-select my_package --event-handlers console_direct+
+```
+
+## Advanced: Build Profiles
+
+For complex projects, you might want different build configurations:
+
+### Debug Profile
+
+```bash
+# Create alias
+alias colcon_debug='colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug'
+
+# Use it
+colcon_debug
+```
+
+### Release Profile
+
+```bash
+alias colcon_release='colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release'
+colcon_release
+```
+
+### Quick Build (Parallel + Symlink)
+
+```bash
+alias colcon_quick='colcon build --symlink-install --parallel-workers $(nproc)'
+colcon_quick
+```
+
+## Build Performance Tips
+
+### 1. Use Parallel Workers
+
+```bash
+colcon build --parallel-workers $(nproc)
+```
+
+### 2. Build Only What Changed
+
+```bash
+colcon build --packages-up-to my_package
+```
+
+### 3. Use Symlink Install for Python
+
+```bash
+colcon build --symlink-install
+```
+
+### 4. Skip Tests During Development
+
+```bash
+colcon build --cmake-args -DBUILD_TESTING=OFF
+```
+
+### 5. Use ccache for C++ (Advanced)
+
+Install ccache:
+```bash
+sudo apt install ccache
+```
+
+Use it:
+```bash
+colcon build --cmake-args -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+```
+
+## Verifying Your Build
+
+After building, verify packages are available:
+
+```bash
+# List all packages
+ros2 pkg list
+
+# Check specific package
+ros2 pkg prefix my_package
+
+# List executables in package
+ros2 pkg executables my_package
+
+# Try running a node
+ros2 run my_package my_node
+```
+
+## Try It Yourself
+
+### Exercise 1: Build Optimization
+
+Time different build strategies:
+
+```bash
+# Full rebuild
+rm -rf build install
+time colcon build
+
+# With parallel workers
+rm -rf build install
+time colcon build --parallel-workers $(nproc)
+
+# With symlink
+rm -rf build install
+time colcon build --symlink-install --parallel-workers $(nproc)
+```
+
+Compare the times!
+
+### Exercise 2: Selective Building
+
+Create a workspace with 3 packages where:
+- package_c depends on package_b
+- package_b depends on package_a
+
+Practice:
+```bash
+# Build only package_a
+colcon build --packages-select package_a
+
+# Build package_c and its dependencies
+colcon build --packages-up-to package_c
+
+# Build package_a and packages depending on it
+colcon build --packages-above package_a
+```
+
+### Exercise 3: Debug a Build Error
+
+Intentionally break a package (remove a dependency from package.xml).
+
+Practice:
+1. Try to build it
+2. Read the error message
+3. Check the log file
+4. Fix the issue
+5. Rebuild successfully
+
+## Common colcon Commands Cheat Sheet
+
+| Command | Purpose |
+|---------|---------|
+| `colcon build` | Build all packages |
+| `colcon build --packages-select PKG` | Build specific package |
+| `colcon build --packages-up-to PKG` | Build package + dependencies |
+| `colcon build --symlink-install` | Use symlinks (Python) |
+| `colcon build --parallel-workers N` | Use N parallel jobs |
+| `colcon test` | Run tests |
+| `colcon test-result --all` | Show test results |
+| `colcon list` | List all packages |
+| `colcon graph` | Show dependency graph |
+
+## Summary
+
+In this section, you learned:
+
+- colcon is ROS 2's build tool for multi-package workspaces
+- `colcon build` compiles and installs packages
+- Selective building speeds up development
+- `--symlink-install` enables quick Python iterations
+- Always source `install/setup.bash` after building
+- How to troubleshoot common build errors
+- Build optimization techniques
+
+## Next Steps
+
+Now that you can build packages efficiently, let's learn how to launch multiple nodes simultaneously with launch files in [4.4 Launch Files & Multi-Node Systems →](./4.4-launch-files)
+
+---
+
+**Navigation**
+
+- [← Back: 4.2 Dependencies & package.xml](./4.2-dependencies)
+- [Next: 4.4 Launch Files & Multi-Node Systems →](./4.4-launch-files)

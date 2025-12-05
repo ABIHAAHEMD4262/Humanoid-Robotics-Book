@@ -1,0 +1,754 @@
+# 4.4 Launch Files & Multi-Node Systems
+
+*Estimated reading time: 12 minutes*
+
+Imagine operating a robot that requires 10 different nodes: sensors, motors, navigation, vision, and more. Would you want to open 10 terminals and start each node manually? Of course not! That's where **launch files** come in—they're scripts that start multiple nodes with a single command.
+
+In this section, you'll learn how to create launch files, coordinate multiple nodes, pass parameters, and build complex multi-node robot systems.
+
+## Why Launch Files?
+
+Without launch files, starting a robot system looks like this:
+
+```bash
+# Terminal 1
+ros2 run robot_sensors camera_node
+
+# Terminal 2
+ros2 run robot_sensors lidar_node
+
+# Terminal 3
+ros2 run robot_control motor_controller
+
+# Terminal 4
+ros2 run robot_brain decision_maker
+
+# ... and so on for 10+ nodes
+```
+
+With a launch file:
+
+```bash
+ros2 launch robot_bringup robot.launch.py
+```
+
+**One command** starts everything in the correct order with proper configuration!
+
+### Benefits of Launch Files
+
+1. **Convenience**: Start multiple nodes with one command
+2. **Configuration**: Set parameters and arguments easily
+3. **Repeatability**: Same setup every time
+4. **Conditional Logic**: Start nodes based on conditions
+5. **Composition**: Include other launch files
+6. **Documentation**: Launch file shows system architecture
+
+## Launch File Basics
+
+ROS 2 uses **Python launch files**. They're more powerful and flexible than the XML launch files from ROS 1.
+
+### Creating Your First Launch File
+
+Let's create a simple launch file that starts two nodes:
+
+```python
+# robot_bringup/launch/simple.launch.py
+
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package='demo_nodes_cpp',
+            executable='talker',
+            name='talker'
+        ),
+        Node(
+            package='demo_nodes_cpp',
+            executable='listener',
+            name='listener'
+        ),
+    ])
+```
+
+**Structure explained**:
+- `generate_launch_description()`: Required function that returns a LaunchDescription
+- `LaunchDescription([...])`: Contains list of launch actions
+- `Node(...)`: Launches a ROS 2 node
+
+### Package Structure for Launch Files
+
+Add launch files to your package:
+
+```
+my_robot_bringup/
+├── package.xml
+├── setup.py
+├── my_robot_bringup/
+│   └── __init__.py
+└── launch/                    # Launch files go here
+    ├── robot.launch.py
+    └── sensors.launch.py
+```
+
+### Registering Launch Files in setup.py
+
+To install launch files, update setup.py:
+
+```python
+from setuptools import setup
+import os
+from glob import glob
+
+package_name = 'my_robot_bringup'
+
+setup(
+    name=package_name,
+    version='0.0.1',
+    packages=[package_name],
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+        # Install launch files
+        (os.path.join('share', package_name, 'launch'),
+            glob('launch/*.launch.py')),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='Your Name',
+    maintainer_email='you@example.com',
+    description='Robot bringup package',
+    license='Apache-2.0',
+    tests_require=['pytest'],
+)
+```
+
+### Running Launch Files
+
+After building:
+
+```bash
+colcon build --packages-select my_robot_bringup
+source install/setup.bash
+
+# Run from package
+ros2 launch my_robot_bringup robot.launch.py
+
+# Or run directly
+ros2 launch path/to/robot.launch.py
+```
+
+## Node Configuration in Launch Files
+
+Configure nodes with various parameters:
+
+### Basic Node Configuration
+
+```python
+Node(
+    package='my_package',           # Package name
+    executable='my_node',           # Node executable name
+    name='custom_node_name',        # Override node name
+    namespace='robot1',             # Namespace for topics
+    output='screen',                # Show output in terminal
+    parameters=[{
+        'param1': 42,
+        'param2': 'hello'
+    }],
+    arguments=['--ros-args', '--log-level', 'debug'],
+    remappings=[
+        ('/input_topic', '/custom_input')
+    ]
+)
+```
+
+### Output Options
+
+Control where node output goes:
+
+```python
+# Show in terminal
+output='screen'
+
+# Hide output
+output='log'
+
+# Custom output
+output={'stdout': 'screen', 'stderr': 'log'}
+```
+
+### Remapping Topics
+
+Redirect topics:
+
+```python
+Node(
+    package='sensor_package',
+    executable='camera',
+    remappings=[
+        ('image', 'camera/image'),           # Rename topic
+        ('camera_info', 'camera/camera_info')
+    ]
+)
+```
+
+## Passing Parameters
+
+### Method 1: Inline Parameters
+
+```python
+Node(
+    package='my_package',
+    executable='my_node',
+    parameters=[{
+        'speed': 1.5,
+        'mode': 'autonomous',
+        'enable_logging': True
+    }]
+)
+```
+
+### Method 2: YAML Parameter Files
+
+Create a YAML file:
+
+```yaml
+# config/robot_params.yaml
+
+/**:
+  ros__parameters:
+    max_speed: 2.0
+    min_speed: 0.1
+    acceleration: 0.5
+    wheel_radius: 0.05
+```
+
+Load in launch file:
+
+```python
+import os
+from ament_index_python.packages import get_package_share_directory
+
+config = os.path.join(
+    get_package_share_directory('my_robot_bringup'),
+    'config',
+    'robot_params.yaml'
+)
+
+Node(
+    package='my_package',
+    executable='my_node',
+    parameters=[config]
+)
+```
+
+### Method 3: Launch Arguments
+
+Accept arguments when launching:
+
+```python
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    # Declare arguments
+    speed_arg = DeclareLaunchArgument(
+        'max_speed',
+        default_value='1.0',
+        description='Maximum robot speed'
+    )
+
+    # Use arguments
+    return LaunchDescription([
+        speed_arg,
+        Node(
+            package='my_package',
+            executable='my_node',
+            parameters=[{
+                'max_speed': LaunchConfiguration('max_speed')
+            }]
+        )
+    ])
+```
+
+Run with custom argument:
+
+```bash
+ros2 launch my_robot_bringup robot.launch.py max_speed:=2.5
+```
+
+## Conditional Node Launching
+
+Launch nodes based on conditions:
+
+### Using IfCondition
+
+```python
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
+
+DeclareLaunchArgument('use_camera', default_value='true'),
+
+Node(
+    package='sensor_package',
+    executable='camera_node',
+    condition=IfCondition(LaunchConfiguration('use_camera'))
+)
+```
+
+Run without camera:
+
+```bash
+ros2 launch my_robot_bringup robot.launch.py use_camera:=false
+```
+
+### Using UnlessCondition
+
+```python
+from launch.conditions import UnlessCondition
+
+Node(
+    package='simulation',
+    executable='sim_node',
+    condition=UnlessCondition(LaunchConfiguration('use_real_robot'))
+)
+```
+
+## Launch File Composition
+
+Include other launch files to build modular systems:
+
+### Including Launch Files
+
+```python
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+import os
+
+def generate_launch_description():
+    sensors_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory('robot_sensors'),
+                'launch',
+                'sensors.launch.py'
+            )
+        ])
+    )
+
+    return LaunchDescription([
+        sensors_launch,
+        Node(
+            package='robot_control',
+            executable='controller'
+        )
+    ])
+```
+
+### Passing Arguments to Included Launch Files
+
+```python
+sensors_launch = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource([...]),
+    launch_arguments={
+        'use_camera': 'true',
+        'use_lidar': 'false'
+    }.items()
+)
+```
+
+## Complete Multi-Node Example
+
+Let's build a complete robot system with multiple nodes:
+
+### sensors.launch.py
+
+```python
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    """Launch all sensor nodes"""
+    return LaunchDescription([
+        # Camera node
+        Node(
+            package='robot_sensors',
+            executable='camera_node',
+            name='camera',
+            output='screen',
+            parameters=[{
+                'frame_rate': 30,
+                'resolution': '640x480'
+            }]
+        ),
+
+        # LiDAR node
+        Node(
+            package='robot_sensors',
+            executable='lidar_node',
+            name='lidar',
+            output='screen',
+            parameters=[{
+                'scan_rate': 10,
+                'range_max': 10.0
+            }]
+        ),
+
+        # IMU node
+        Node(
+            package='robot_sensors',
+            executable='imu_node',
+            name='imu',
+            output='screen'
+        ),
+    ])
+```
+
+### robot_full.launch.py
+
+```python
+import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+
+def generate_launch_description():
+    # Declare arguments
+    use_sensors = DeclareLaunchArgument(
+        'use_sensors',
+        default_value='true',
+        description='Whether to launch sensor nodes'
+    )
+
+    use_sim = DeclareLaunchArgument(
+        'sim',
+        default_value='false',
+        description='Whether to use simulation'
+    )
+
+    # Get package directories
+    bringup_dir = get_package_share_directory('robot_bringup')
+
+    # Include sensor launch file
+    sensors_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(bringup_dir, 'launch', 'sensors.launch.py')
+        ]),
+        condition=IfCondition(LaunchConfiguration('use_sensors'))
+    )
+
+    # Control node
+    controller = Node(
+        package='robot_control',
+        executable='motor_controller',
+        name='controller',
+        output='screen',
+        parameters=[{
+            'max_speed': 2.0,
+            'simulation': LaunchConfiguration('sim')
+        }]
+    )
+
+    # Navigation node
+    navigator = Node(
+        package='robot_navigation',
+        executable='path_planner',
+        name='navigator',
+        output='screen'
+    )
+
+    # State publisher for robot model
+    robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'robot_description': open(
+                os.path.join(bringup_dir, 'urdf', 'robot.urdf')
+            ).read()
+        }]
+    )
+
+    return LaunchDescription([
+        use_sensors,
+        use_sim,
+        sensors_launch,
+        controller,
+        navigator,
+        robot_state_publisher,
+    ])
+```
+
+Run the full system:
+
+```bash
+# Normal mode with sensors
+ros2 launch robot_bringup robot_full.launch.py
+
+# Simulation mode without sensors
+ros2 launch robot_bringup robot_full.launch.py sim:=true use_sensors:=false
+```
+
+## Launch File Best Practices
+
+### 1. Organize by Function
+
+```
+launch/
+├── sensors.launch.py          # All sensors
+├── navigation.launch.py       # Navigation stack
+├── control.launch.py          # Motor control
+└── robot_full.launch.py       # Complete system
+```
+
+### 2. Use Descriptive Names
+
+```python
+# BAD
+Node(package='pkg', executable='node1', name='n1')
+
+# GOOD
+Node(
+    package='robot_sensors',
+    executable='camera_driver',
+    name='front_camera'
+)
+```
+
+### 3. Add Comments
+
+```python
+def generate_launch_description():
+    """
+    Launch complete robot system.
+
+    Arguments:
+        sim: Use simulation (default: false)
+        use_sensors: Launch sensor nodes (default: true)
+    """
+    # Sensor nodes
+    camera = Node(...)  # Front-facing camera for vision
+    lidar = Node(...)   # 360-degree LiDAR for mapping
+
+    # ... rest of launch file
+```
+
+### 4. Provide Defaults
+
+```python
+DeclareLaunchArgument(
+    'max_speed',
+    default_value='1.0',  # Always provide sensible default
+    description='Maximum robot speed in m/s'
+)
+```
+
+### 5. Validate Parameters
+
+```python
+from launch.actions import OpaqueFunction
+
+def validate_and_launch(context):
+    speed = float(LaunchConfiguration('max_speed').perform(context))
+    if speed < 0 or speed > 5.0:
+        raise ValueError(f"max_speed must be between 0 and 5.0, got {speed}")
+    return []
+
+LaunchDescription([
+    DeclareLaunchArgument('max_speed'),
+    OpaqueFunction(function=validate_and_launch),
+    # ... nodes
+])
+```
+
+## Debugging Launch Files
+
+### View Launch Arguments
+
+```bash
+ros2 launch robot_bringup robot.launch.py --show-args
+```
+
+Output:
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'max_speed':
+        Maximum robot speed in m/s
+        (default: '1.0')
+
+    'sim':
+        Use simulation mode
+        (default: 'false')
+```
+
+### Print Launch Configuration
+
+Add debug prints:
+
+```python
+from launch.actions import LogInfo
+
+LogInfo(msg=['Max speed is: ', LaunchConfiguration('max_speed')])
+```
+
+### Check Running Nodes
+
+After launching:
+
+```bash
+ros2 node list
+ros2 node info /node_name
+ros2 topic list
+```
+
+## Common Launch File Patterns
+
+### Pattern 1: Namespace Multiple Nodes
+
+```python
+# Launch same nodes for multiple robots
+robot1_nodes = [
+    Node(
+        package='robot_control',
+        executable='controller',
+        namespace='robot1'
+    ),
+    Node(
+        package='robot_sensors',
+        executable='camera',
+        namespace='robot1'
+    )
+]
+
+robot2_nodes = [
+    Node(
+        package='robot_control',
+        executable='controller',
+        namespace='robot2'
+    ),
+    Node(
+        package='robot_sensors',
+        executable='camera',
+        namespace='robot2'
+    )
+]
+```
+
+Topics become `/robot1/topic` and `/robot2/topic`.
+
+### Pattern 2: Group Actions
+
+```python
+from launch.actions import GroupAction
+
+sensors = GroupAction([
+    Node(package='sensors', executable='camera'),
+    Node(package='sensors', executable='lidar'),
+    Node(package='sensors', executable='imu'),
+])
+```
+
+### Pattern 3: Event Handlers
+
+Run actions when events occur:
+
+```python
+from launch.actions import RegisterEventHandler, EmitEvent, Shutdown
+from launch.event_handlers import OnProcessExit
+
+shutdown_handler = RegisterEventHandler(
+    OnProcessExit(
+        target_action=critical_node,
+        on_exit=[EmitEvent(event=Shutdown())]
+    )
+)
+```
+
+This shuts down everything if a critical node exits.
+
+## Try It Yourself
+
+### Exercise 1: Multi-Sensor Launch
+
+Create a launch file that starts:
+- Camera node (30 fps)
+- LiDAR node (10 Hz)
+- IMU node (100 Hz)
+
+Each with appropriate parameters.
+
+### Exercise 2: Conditional Launch
+
+Create a launch file with a `use_simulation` argument that:
+- If true: launches simulation nodes
+- If false: launches real hardware drivers
+
+### Exercise 3: Modular System
+
+Create three launch files:
+1. `sensors.launch.py` - All sensors
+2. `control.launch.py` - Motor controllers
+3. `full_robot.launch.py` - Includes both above
+
+Test launching them individually and together.
+
+### Exercise 4: Parameter Configuration
+
+Create a YAML config file and a launch file that:
+- Loads parameters from YAML
+- Accepts command-line arguments to override specific parameters
+- Prints the final parameter values
+
+## Launch File Debugging Checklist
+
+When your launch file doesn't work:
+
+- [ ] Check file is in `launch/` directory
+- [ ] Verify `setup.py` includes launch files in `data_files`
+- [ ] Rebuild and source: `colcon build && source install/setup.bash`
+- [ ] Check package names are correct: `ros2 pkg list`
+- [ ] Verify executable names: `ros2 pkg executables package_name`
+- [ ] Look for Python syntax errors
+- [ ] Check indentation (Python is sensitive!)
+- [ ] View launch arguments: `--show-args`
+- [ ] Check node output: `output='screen'`
+
+## Summary
+
+In this section, you learned:
+
+- Launch files start multiple nodes with one command
+- Python launch files are more powerful than XML
+- Configure nodes with parameters, arguments, and remappings
+- Use conditional logic to launch nodes selectively
+- Compose launch files for modular systems
+- Pass parameters via YAML files or command-line arguments
+- Debug and organize complex multi-node systems
+
+## Congratulations!
+
+You've completed Chapter 4! You now know how to:
+- Create and structure ROS 2 packages
+- Manage dependencies properly
+- Build packages efficiently with colcon
+- Launch multi-node systems with launch files
+
+You're ready for the Module 1 mini-project where you'll apply all these skills!
+
+---
+
+**Navigation**
+
+- [← Back: 4.3 Building with colcon](./4.3-colcon-build)
+- [Next: Chapter 5: Mini-Project →](../chapter5-miniproject/index)

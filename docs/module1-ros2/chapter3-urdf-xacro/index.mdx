@@ -1,0 +1,154 @@
+# Chapter 3: Robot Description with URDF & Xacro
+
+**Estimated Chapter Time**: 45 minutes
+**Prerequisites**: Chapter 1 - Core Communication Patterns, Chapter 2 - Python Development
+**Difficulty**: Intermediate
+
+## Chapter Overview
+
+You know how to make ROS 2 programs communicate. Now learn how to describe robot structure.
+
+URDF (Unified Robot Description Format) is XML for describing robots. Xacro makes URDF easier by adding macros and variables. This chapter teaches you to define humanoid robot models.
+
+## Learning Objectives
+
+By the end of this chapter, you will:
+
+- Understand URDF structure and syntax
+- Define robot links and joints
+- Use Xacro macros for reusable components
+- Create collision and visual geometries
+- Add inertial properties for physics
+- Visualize robots in RViz
+- Follow best practices for robot modeling
+
+## Chapter Structure
+
+This chapter contains 4 subtopics:
+
+### [3.1 URDF Basics - Links & Joints](./3.1-urdf-basics.mdx)
+Learn the fundamentals of URDF, including links, joints, and the kinematic tree structure.
+
+**Key Concepts**: URDF syntax, link elements, joint types, parent-child relationships, coordinate frames
+
+**Estimated Time**: 12 minutes
+
+---
+
+### [3.2 Visual & Collision Geometry](./3.2-visual-collision.mdx)
+Define how robots look and interact physically with their environment.
+
+**Key Concepts**: Visual tags, collision geometry, mesh files, primitive shapes, STL/DAE formats
+
+**Estimated Time**: 10 minutes
+
+---
+
+### [3.3 Xacro Macros & Properties](./3.3-xacro-macros.mdx)
+Use Xacro to create reusable, parameterized robot descriptions.
+
+**Key Concepts**: Xacro syntax, properties, macros, parameters, code reuse, robot variants
+
+**Estimated Time**: 13 minutes
+
+---
+
+### [3.4 Inertial Properties & Physics](./3.4-inertial-physics.mdx)
+Add physics properties for realistic simulation behavior.
+
+**Key Concepts**: Mass, inertia tensors, center of mass, physics simulation, stability
+
+**Estimated Time**: 10 minutes
+
+---
+
+## Prerequisites
+
+Before starting this chapter:
+
+- Complete Chapter 1 (Core Communication Patterns)
+- Complete Chapter 2 (Python Development)
+- Have ROS 2 Humble installed
+- Have RViz installed (`sudo apt install ros-humble-rviz2`)
+- Basic XML knowledge helpful (but not required)
+
+## What You'll Build
+
+Throughout this chapter, you'll create:
+
+- A simple 2-link robot arm in URDF
+- Visual and collision geometries for robot parts
+- Xacro macros for a humanoid robot leg
+- Complete URDF with inertial properties
+- Visualizations in RViz
+
+## Development Environment
+
+You'll need:
+- Text editor or IDE (VS Code recommended)
+- Terminal access
+- RViz 2 for visualization
+- `xacro` command-line tool (included with ROS 2)
+
+## Why URDF & Xacro?
+
+URDF provides:
+- **Standard Format**: Used across ROS ecosystem
+- **Simulation Ready**: Works with Gazebo, Isaac Sim, etc.
+- **Visualization Support**: Direct RViz integration
+- **Kinematic Tree**: Clear parent-child relationships
+
+Xacro adds:
+- **Code Reuse**: Write once, use many times
+- **Parameterization**: Easy robot variants
+- **Maintainability**: Cleaner, more organized descriptions
+- **Math Operations**: Calculate derived values
+
+## Common Patterns You'll Learn
+
+### Pattern 1: Basic Link Definition
+```xml
+<link name="base_link">
+  <visual>
+    <geometry>
+      <box size="0.5 0.3 0.1"/>
+    </geometry>
+  </visual>
+</link>
+```
+
+### Pattern 2: Joint Connection
+```xml
+<joint name="shoulder_joint" type="revolute">
+  <parent link="base_link"/>
+  <child link="upper_arm"/>
+  <origin xyz="0 0 0.1" rpy="0 0 0"/>
+  <axis xyz="0 1 0"/>
+  <limit lower="-1.57" upper="1.57" effort="100" velocity="1.0"/>
+</joint>
+```
+
+### Pattern 3: Xacro Macro
+```xml
+<xacro:macro name="leg" params="prefix reflect">
+  <link name="${prefix}_thigh">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.4"/>
+      </geometry>
+    </visual>
+  </link>
+</xacro:macro>
+```
+
+## Next Steps
+
+Start with [3.1 URDF Basics](./3.1-urdf-basics.mdx) to learn the fundamentals of robot description.
+
+**Quick Navigation**:
+- [3.1 URDF Basics](./3.1-urdf-basics.mdx)
+- [3.2 Visual & Collision Geometry](./3.2-visual-collision.mdx)
+- [3.3 Xacro Macros & Properties](./3.3-xacro-macros.mdx)
+- [3.4 Inertial Properties & Physics](./3.4-inertial-physics.mdx)
+- [← Chapter 2: Python Development](../chapter2-python-rclpy/index.mdx)
+- [Module 1 Overview →](../index.mdx)

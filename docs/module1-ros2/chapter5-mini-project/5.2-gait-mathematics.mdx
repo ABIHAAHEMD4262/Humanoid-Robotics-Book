@@ -1,0 +1,685 @@
+# 5.2 Gait Mathematics & Trajectory Generation
+
+:::tip Estimated Time
+**20 minutes**
+:::
+
+Now that we have our package set up, it's time for the exciting part—understanding and implementing the mathematics that makes humanoid robots walk! Don't worry if you're not a math expert; we'll build this up step by step with clear explanations and visualizations.
+
+## Understanding Walking Gaits
+
+### What Is a Gait?
+
+A **gait** is the pattern of movement used for locomotion. For humans (and humanoid robots), walking involves a coordinated sequence of leg movements that maintains balance while moving forward.
+
+### The Walking Cycle
+
+A complete walking cycle for one leg consists of two phases:
+
+1. **Stance Phase** (~60% of cycle)
+   - The foot is on the ground
+   - The leg supports the body weight
+   - The hip extends (moves backward relative to the body)
+   - The knee is mostly straight
+   - The ankle stabilizes the foot
+
+2. **Swing Phase** (~40% of cycle)
+   - The foot is in the air
+   - The leg moves forward for the next step
+   - The hip flexes (moves forward)
+   - The knee bends to clear the ground
+   - The ankle prepares for landing
+
+:::info Phase Coordination
+While one leg is in stance phase, the other is in swing phase. They're 180° out of phase—when the left leg is at 0° in its cycle, the right leg is at 180°.
+:::
+
+### Key Parameters
+
+To generate walking motion, we need to define:
+
+- **Step frequency** (f): How many steps per second (typically 0.5-1.0 Hz for humanoids)
+- **Step height** (h): How high the foot lifts during swing (typically 0.05-0.1 m)
+- **Stride length** (s): How far forward the foot moves (typically 0.1-0.3 m)
+- **Joint ranges**: Limits on how far each joint can move
+
+## The Mathematics of Joint Trajectories
+
+### Why Sinusoids?
+
+We use **sinusoidal (sine and cosine) functions** for gait generation because:
+
+1. ✅ They produce smooth, continuous motion (no jerky movements)
+2. ✅ They're periodic (repeat naturally for continuous walking)
+3. ✅ They're differentiable (easy to compute velocities and accelerations)
+4. ✅ They're computationally efficient
+5. ✅ They approximate biological walking patterns reasonably well
+
+### Hip Joint Trajectory
+
+The hip joint controls forward/backward leg motion. During walking:
+
+```
+θ_hip(t) = A_hip * sin(2π * f * t + φ)
+```
+
+Where:
+- `θ_hip`: Hip joint angle (radians)
+- `A_hip`: Amplitude of hip motion (determines stride length)
+- `f`: Step frequency (Hz)
+- `t`: Time (seconds)
+- `φ`: Phase offset (0 for left leg, π for right leg)
+
+**Physical meaning**: The hip swings from negative (leg back) to positive (leg forward) angles.
+
+### Knee Joint Trajectory
+
+The knee needs to bend during swing phase to lift the foot. We use a squared sine wave to keep the knee mostly straight during stance:
+
+```
+θ_knee(t) = -A_knee * sin²(2π * f * t + φ)
+```
+
+Where:
+- `θ_knee`: Knee joint angle (radians, negative = bent)
+- `A_knee`: Maximum knee bend angle
+- The squared sine ensures the knee is only bent during swing phase
+
+**Physical meaning**: The knee bends only when the leg is swinging forward, stays straight during stance.
+
+### Ankle Joint Trajectory
+
+The ankle provides fine control for foot placement:
+
+```
+θ_ankle(t) = A_ankle * sin(2π * f * t + φ + ψ)
+```
+
+Where:
+- `θ_ankle`: Ankle joint angle (radians)
+- `A_ankle`: Ankle motion amplitude (small, for stability)
+- `ψ`: Additional phase shift for timing
+
+**Physical meaning**: The ankle adjusts foot angle for smooth heel-to-toe motion.
+
+## Implementing the GaitGenerator Class
+
+Let's create a Python class that encapsulates all this mathematics. Create a new file:
+
+```python title="gait_publisher/math/gait_generator.py"
+#!/usr/bin/env python3
+"""
+Gait Generator for Humanoid Walking
+Generates sinusoidal joint trajectories for bipedal walking motion.
+"""
+
+import math
+from typing import Dict, Tuple
+
+
+class GaitGenerator:
+    """
+    Generates walking gait trajectories for a bipedal humanoid robot.
+
+    Uses sinusoidal functions to create smooth, periodic joint motions
+    that approximate natural walking patterns.
+    """
+
+    def __init__(
+        self,
+        frequency: float = 0.5,
+        step_height: float = 0.08,
+        stride_length: float = 0.15,
+    ):
+        """
+        Initialize the gait generator.
+
+        Args:
+            frequency: Step frequency in Hz (steps per second)
+            step_height: Maximum height foot lifts off ground in meters
+            stride_length: Forward distance of each step in meters
+        """
+        self.frequency = frequency  # Hz
+        self.step_height = step_height  # meters
+        self.stride_length = stride_length  # meters
+
+        # Convert physical parameters to joint angles
+        # These are simplified kinematic approximations
+        self.hip_amplitude = self._stride_to_hip_angle(stride_length)
+        self.knee_amplitude = self._step_height_to_knee_angle(step_height)
+        self.ankle_amplitude = 0.1  # Small ankle motion for stability
+
+        # Phase offsets
+        self.left_phase = 0.0  # Left leg starts at 0
+        self.right_phase = math.pi  # Right leg 180° out of phase
+
+    def _stride_to_hip_angle(self, stride: float) -> float:
+        """
+        Convert stride length to hip joint amplitude.
+
+        Simplified kinematic approximation:
+        For a leg length of ~0.8m, hip angle ≈ arcsin(stride / leg_length)
+
+        Args:
+            stride: Stride length in meters
+
+        Returns:
+            Hip amplitude in radians
+        """
+        leg_length = 0.8  # Approximate total leg length
+        # Use small angle approximation for simplicity
+        return stride / leg_length
+
+    def _step_height_to_knee_angle(self, height: float) -> float:
+        """
+        Convert step height to knee joint amplitude.
+
+        When knee bends, foot lifts. Approximate relationship:
+        height ≈ thigh_length * (1 - cos(knee_angle))
+
+        For our robot: thigh ≈ 0.4m
+
+        Args:
+            height: Step height in meters
+
+        Returns:
+            Knee amplitude in radians
+        """
+        thigh_length = 0.4
+        # Solve for knee angle
+        if height >= 2 * thigh_length:
+            # Can't lift that high!
+            return math.pi / 2
+        return math.acos(1 - height / thigh_length)
+
+    def get_joint_angles(self, time: float) -> Dict[str, float]:
+        """
+        Compute all joint angles at a given time.
+
+        Args:
+            time: Current time in seconds
+
+        Returns:
+            Dictionary mapping joint names to angles in radians
+        """
+        # Compute phase for current time
+        phase = 2 * math.pi * self.frequency * time
+
+        # Left leg joints
+        left_hip = self._hip_trajectory(phase, self.left_phase)
+        left_knee = self._knee_trajectory(phase, self.left_phase)
+        left_ankle = self._ankle_trajectory(phase, self.left_phase)
+
+        # Right leg joints (180° out of phase)
+        right_hip = self._hip_trajectory(phase, self.right_phase)
+        right_knee = self._knee_trajectory(phase, self.right_phase)
+        right_ankle = self._ankle_trajectory(phase, self.right_phase)
+
+        return {
+            'left_hip_joint': left_hip,
+            'left_knee_joint': left_knee,
+            'left_ankle_joint': left_ankle,
+            'right_hip_joint': right_hip,
+            'right_knee_joint': right_knee,
+            'right_ankle_joint': right_ankle,
+        }
+
+    def _hip_trajectory(self, phase: float, offset: float) -> float:
+        """
+        Compute hip joint angle.
+
+        Uses sine wave for smooth forward/backward motion.
+        Positive angle = leg forward, Negative = leg back
+
+        Args:
+            phase: Current phase in radians
+            offset: Phase offset for this leg
+
+        Returns:
+            Hip angle in radians
+        """
+        return self.hip_amplitude * math.sin(phase + offset)
+
+    def _knee_trajectory(self, phase: float, offset: float) -> float:
+        """
+        Compute knee joint angle.
+
+        Uses squared sine wave to bend knee only during swing phase.
+        Negative angle = knee bent
+
+        Args:
+            phase: Current phase in radians
+            offset: Phase offset for this leg
+
+        Returns:
+            Knee angle in radians (negative)
+        """
+        # Squared sine: only positive during swing phase
+        sin_val = math.sin(phase + offset)
+        return -self.knee_amplitude * (sin_val ** 2)
+
+    def _ankle_trajectory(self, phase: float, offset: float) -> float:
+        """
+        Compute ankle joint angle.
+
+        Small sinusoidal motion for foot angle control.
+
+        Args:
+            phase: Current phase in radians
+            offset: Phase offset for this leg
+
+        Returns:
+            Ankle angle in radians
+        """
+        # Add small phase shift for proper timing with hip/knee
+        return self.ankle_amplitude * math.sin(phase + offset + math.pi / 4)
+
+    def set_parameters(
+        self,
+        frequency: float = None,
+        step_height: float = None,
+        stride_length: float = None
+    ):
+        """
+        Update gait parameters dynamically.
+
+        Args:
+            frequency: New step frequency (Hz)
+            step_height: New step height (meters)
+            stride_length: New stride length (meters)
+        """
+        if frequency is not None:
+            self.frequency = frequency
+
+        if step_height is not None:
+            self.step_height = step_height
+            self.knee_amplitude = self._step_height_to_knee_angle(step_height)
+
+        if stride_length is not None:
+            self.stride_length = stride_length
+            self.hip_amplitude = self._stride_to_hip_angle(stride_length)
+
+    def get_parameters(self) -> Dict[str, float]:
+        """
+        Get current gait parameters.
+
+        Returns:
+            Dictionary of current parameters
+        """
+        return {
+            'frequency': self.frequency,
+            'step_height': self.step_height,
+            'stride_length': self.stride_length,
+            'hip_amplitude': self.hip_amplitude,
+            'knee_amplitude': self.knee_amplitude,
+            'ankle_amplitude': self.ankle_amplitude,
+        }
+```
+
+## Understanding the Code
+
+Let's break down the key components:
+
+### 1. Initialization
+
+```python
+def __init__(self, frequency=0.5, step_height=0.08, stride_length=0.15):
+```
+
+We initialize with **physical parameters** (frequency, height, distance) that are intuitive to understand, then convert them to **joint angles** internally.
+
+### 2. Physical-to-Angular Conversion
+
+```python
+def _stride_to_hip_angle(self, stride: float) -> float:
+    leg_length = 0.8
+    return stride / leg_length
+```
+
+This converts "I want to step 15cm forward" to "The hip needs to rotate X radians." This is a simplified kinematic model—real robots use more complex inverse kinematics.
+
+### 3. Joint Trajectory Functions
+
+Each joint has its own trajectory function:
+
+- **Hip**: Simple sine wave for smooth oscillation
+- **Knee**: Squared sine to bend only during swing
+- **Ankle**: Sine with phase shift for timing
+
+### 4. Phase Coordination
+
+```python
+self.left_phase = 0.0
+self.right_phase = math.pi  # 180° out of phase
+```
+
+This ensures that when the left leg is forward, the right is back, and vice versa.
+
+## Testing the Gait Generator
+
+Let's create a test script to visualize our trajectories. Create a new file:
+
+```python title="gait_publisher/test_gait_math.py"
+#!/usr/bin/env python3
+"""
+Test script to visualize gait trajectories.
+Run this to verify the math is working before integrating with ROS.
+"""
+
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+from gait_publisher.math.gait_generator import GaitGenerator
+
+
+def plot_trajectories(duration=4.0, dt=0.02):
+    """
+    Plot joint trajectories over time.
+
+    Args:
+        duration: Time duration to plot (seconds)
+        dt: Time step (seconds)
+    """
+    # Create gait generator
+    gait = GaitGenerator(
+        frequency=0.5,  # 0.5 Hz = 1 step every 2 seconds
+        step_height=0.08,  # 8 cm
+        stride_length=0.15,  # 15 cm
+    )
+
+    # Generate time array
+    times = np.arange(0, duration, dt)
+
+    # Storage for trajectories
+    trajectories = {
+        'left_hip': [],
+        'left_knee': [],
+        'left_ankle': [],
+        'right_hip': [],
+        'right_knee': [],
+        'right_ankle': [],
+    }
+
+    # Compute trajectories
+    for t in times:
+        angles = gait.get_joint_angles(t)
+        trajectories['left_hip'].append(angles['left_hip_joint'])
+        trajectories['left_knee'].append(angles['left_knee_joint'])
+        trajectories['left_ankle'].append(angles['left_ankle_joint'])
+        trajectories['right_hip'].append(angles['right_hip_joint'])
+        trajectories['right_knee'].append(angles['right_knee_joint'])
+        trajectories['right_ankle'].append(angles['right_ankle_joint'])
+
+    # Convert to degrees for easier reading
+    for key in trajectories:
+        trajectories[key] = np.rad2deg(trajectories[key])
+
+    # Create plots
+    fig, axes = plt.subplots(3, 1, figsize=(12, 10))
+    fig.suptitle('Humanoid Gait Trajectories', fontsize=16)
+
+    # Hip joints
+    axes[0].plot(times, trajectories['left_hip'], 'b-', label='Left Hip', linewidth=2)
+    axes[0].plot(times, trajectories['right_hip'], 'r--', label='Right Hip', linewidth=2)
+    axes[0].set_ylabel('Hip Angle (degrees)')
+    axes[0].set_title('Hip Joint Trajectories (Forward/Backward)')
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+    axes[0].axhline(y=0, color='k', linestyle='-', linewidth=0.5)
+
+    # Knee joints
+    axes[1].plot(times, trajectories['left_knee'], 'b-', label='Left Knee', linewidth=2)
+    axes[1].plot(times, trajectories['right_knee'], 'r--', label='Right Knee', linewidth=2)
+    axes[1].set_ylabel('Knee Angle (degrees)')
+    axes[1].set_title('Knee Joint Trajectories (Bend during swing)')
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+    axes[1].axhline(y=0, color='k', linestyle='-', linewidth=0.5)
+
+    # Ankle joints
+    axes[2].plot(times, trajectories['left_ankle'], 'b-', label='Left Ankle', linewidth=2)
+    axes[2].plot(times, trajectories['right_ankle'], 'r--', label='Right Ankle', linewidth=2)
+    axes[2].set_xlabel('Time (seconds)')
+    axes[2].set_ylabel('Ankle Angle (degrees)')
+    axes[2].set_title('Ankle Joint Trajectories (Foot angle control)')
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+    axes[2].axhline(y=0, color='k', linestyle='-', linewidth=0.5)
+
+    plt.tight_layout()
+    plt.show()
+
+    # Print some statistics
+    print("\n=== Gait Statistics ===")
+    print(f"Frequency: {gait.frequency} Hz")
+    print(f"Step height: {gait.step_height} m")
+    print(f"Stride length: {gait.stride_length} m")
+    print(f"\nJoint Amplitudes (degrees):")
+    print(f"  Hip: ±{np.rad2deg(gait.hip_amplitude):.2f}°")
+    print(f"  Knee: {np.rad2deg(gait.knee_amplitude):.2f}° (max bend)")
+    print(f"  Ankle: ±{np.rad2deg(gait.ankle_amplitude):.2f}°")
+
+
+def main():
+    """Main test function."""
+    print("Testing Gait Generator...")
+    print("This will open a matplotlib window with trajectory plots.")
+    print("\nClose the plot window to exit.\n")
+
+    try:
+        plot_trajectories()
+    except ImportError:
+        print("\nError: matplotlib is not installed!")
+        print("Install it with: pip3 install matplotlib")
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
+```
+
+### Running the Test
+
+Before running this test, you may need to install matplotlib:
+
+```bash
+pip3 install matplotlib numpy
+```
+
+Then run the test:
+
+```bash
+cd ~/humanoid_ws/src/gait_publisher
+python3 gait_publisher/test_gait_math.py
+```
+
+You should see a window with three plots showing:
+
+1. **Hip angles**: Smooth sine waves, 180° out of phase
+2. **Knee angles**: Negative peaks during swing phase (when knee bends)
+3. **Ankle angles**: Small oscillations for foot control
+
+:::tip What to Look For
+- **Left and right legs alternate**: When left hip is forward (+), right is back (-)
+- **Knee bends only during forward swing**: When hip is positive, knee goes negative
+- **Smooth, continuous curves**: No sudden jumps or discontinuities
+- **Periodic motion**: Pattern repeats every 2 seconds (for 0.5 Hz frequency)
+:::
+
+## Verifying the Mathematics
+
+Let's add one more verification script that checks the phase relationships:
+
+```python title="gait_publisher/verify_gait.py"
+#!/usr/bin/env python3
+"""
+Verification script for gait generator.
+Checks that phase relationships are correct.
+"""
+
+import math
+from gait_publisher.math.gait_generator import GaitGenerator
+
+
+def verify_phase_relationships():
+    """Verify that left and right legs are 180° out of phase."""
+    gait = GaitGenerator()
+
+    print("=== Verifying Phase Relationships ===\n")
+
+    # Test at several time points
+    test_times = [0.0, 0.5, 1.0, 1.5, 2.0]
+
+    for t in test_times:
+        angles = gait.get_joint_angles(t)
+
+        left_hip = angles['left_hip_joint']
+        right_hip = angles['right_hip_joint']
+
+        print(f"Time: {t:.1f}s")
+        print(f"  Left Hip:  {math.degrees(left_hip):6.2f}°")
+        print(f"  Right Hip: {math.degrees(right_hip):6.2f}°")
+        print(f"  Difference: {math.degrees(abs(left_hip + right_hip)):6.2f}° (should be ~0)")
+        print()
+
+    print("✓ If differences are near 0°, phase relationships are correct!\n")
+
+
+def verify_joint_limits():
+    """Verify that joint angles stay within reasonable limits."""
+    gait = GaitGenerator()
+
+    print("=== Verifying Joint Limits ===\n")
+
+    # Check angles over one full cycle
+    duration = 1.0 / gait.frequency
+    dt = 0.01
+
+    max_angles = {
+        'hip': 0.0,
+        'knee': 0.0,
+        'ankle': 0.0,
+    }
+
+    t = 0.0
+    while t < duration:
+        angles = gait.get_joint_angles(t)
+
+        max_angles['hip'] = max(max_angles['hip'], abs(angles['left_hip_joint']))
+        max_angles['knee'] = max(max_angles['knee'], abs(angles['left_knee_joint']))
+        max_angles['ankle'] = max(max_angles['ankle'], abs(angles['left_ankle_joint']))
+
+        t += dt
+
+    print("Maximum joint angles over one cycle:")
+    print(f"  Hip:   ±{math.degrees(max_angles['hip']):.2f}° (limit: ±90°)")
+    print(f"  Knee:   {math.degrees(max_angles['knee']):.2f}° (limit: 0° to -115°)")
+    print(f"  Ankle: ±{math.degrees(max_angles['ankle']):.2f}° (limit: ±30°)")
+    print()
+
+    # Check if within limits
+    hip_ok = max_angles['hip'] <= math.radians(90)
+    knee_ok = max_angles['knee'] <= math.radians(115)
+    ankle_ok = max_angles['ankle'] <= math.radians(30)
+
+    if hip_ok and knee_ok and ankle_ok:
+        print("✓ All joint angles within safe limits!\n")
+    else:
+        print("✗ WARNING: Some angles exceed limits!\n")
+
+
+def main():
+    """Run all verifications."""
+    print("\n" + "="*50)
+    print("GAIT GENERATOR VERIFICATION")
+    print("="*50 + "\n")
+
+    verify_phase_relationships()
+    verify_joint_limits()
+
+    print("="*50)
+    print("Verification complete!")
+    print("="*50 + "\n")
+
+
+if __name__ == '__main__':
+    main()
+```
+
+Run this verification:
+
+```bash
+python3 gait_publisher/verify_gait.py
+```
+
+You should see output confirming that:
+- Left and right legs are properly phased
+- All joint angles stay within safe limits
+
+## Checkpoint: What We've Built
+
+Let's review our progress:
+
+✅ **Understood walking gait theory** (stance vs. swing phases)
+✅ **Learned the mathematics** (sinusoidal trajectories)
+✅ **Implemented GaitGenerator class** with proper joint coordination
+✅ **Created test scripts** to visualize and verify trajectories
+✅ **Confirmed phase relationships** between left and right legs
+✅ **Verified joint limits** for safety
+
+## Understanding the Output
+
+When you run the test scripts, here's what the data means:
+
+### Hip Trajectories
+- **Positive values**: Leg is forward (swing phase completion)
+- **Negative values**: Leg is backward (stance phase)
+- **Zero crossing**: Transition point between stance and swing
+
+### Knee Trajectories
+- **Zero**: Knee is straight (stance phase)
+- **Negative values**: Knee is bent (swing phase)
+- **Peak negative**: Maximum bend (mid-swing)
+
+### Ankle Trajectories
+- Small oscillations that help with foot placement
+- Slight lead relative to hip (phase shift)
+
+## Troubleshooting
+
+### Issue: Import errors when running tests
+
+**Solution**: Make sure you're in the package directory:
+```bash
+cd ~/humanoid_ws/src/gait_publisher
+python3 -m gait_publisher.test_gait_math
+```
+
+### Issue: Plots don't appear
+
+**Solution**: Check matplotlib installation:
+```bash
+pip3 install matplotlib numpy
+```
+
+### Issue: Joint angles seem too large
+
+**Solution**: Remember that angles are in radians in the code but converted to degrees in plots. Check the `get_parameters()` output.
+
+## Next Steps
+
+Excellent work! You've implemented the mathematical foundation for walking gaits. You now have a `GaitGenerator` class that can compute joint angles for smooth, coordinated walking motion.
+
+In the next section, we'll integrate this generator with ROS 2 by creating a publisher node that sends these joint commands at real-time control rates (50 Hz). This is where your gait generator becomes a working ROS 2 system!
+
+---
+
+## Navigation
+
+← [Previous: 5.1 Project Setup](./5.1-project-setup.mdx) | [Next: 5.3 Publisher Node →](./5.3-publisher-node.mdx)
+
+**Chapter 5 Sections**:
+- [5.1 Project Setup](./5.1-project-setup.mdx)
+- **5.2 Gait Mathematics** (You are here)
+- [5.3 Publisher Node](./5.3-publisher-node.mdx)
+- [5.4 Visualization & Testing](./5.4-visualization-testing.mdx)

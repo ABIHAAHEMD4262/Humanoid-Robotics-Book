@@ -1,0 +1,488 @@
+# 4.2 Dependencies & package.xml
+
+*Estimated reading time: 8 minutes*
+
+Imagine building a house without ordering materials first—you'd quickly realize you need bricks, cement, and wood before you can start. Similarly, your ROS 2 packages often need other packages to function. This is where **dependencies** come in.
+
+In this section, you'll learn how to declare, manage, and troubleshoot dependencies in your ROS 2 packages.
+
+## Why Dependencies Matter
+
+Dependencies tell ROS 2:
+- What other packages your package needs to build
+- What other packages your package needs to run
+- What tools are needed for testing
+
+Without proper dependency declarations, your package might:
+- Fail to build on another computer
+- Crash at runtime due to missing libraries
+- Be impossible to test or deploy
+
+:::tip
+Think of dependencies as a recipe's ingredient list—anyone should be able to look at your package.xml and know exactly what's needed.
+:::
+
+## Types of Dependencies
+
+ROS 2 has several dependency types, each serving a different purpose:
+
+### 1. Build Dependencies (`<build_depend>`)
+
+Needed to **compile** your package:
+
+```xml
+<build_depend>rclcpp</build_depend>
+<build_depend>std_msgs</build_depend>
+```
+
+**When to use**: Your code includes headers or imports from these packages at build time.
+
+**Example**: If your C++ code has `#include <rclcpp/rclcpp.hpp>`, you need rclcpp as a build dependency.
+
+### 2. Execution Dependencies (`<exec_depend>`)
+
+Needed to **run** your package:
+
+```xml
+<exec_depend>rclpy</exec_depend>
+<exec_depend>sensor_msgs</exec_depend>
+```
+
+**When to use**: Your package imports or uses these packages at runtime.
+
+**Example**: If your Python node has `import rclpy`, you need rclpy as an execution dependency.
+
+### 3. Build and Execution Dependencies (`<depend>`)
+
+Shorthand when you need a package for **both** building and running:
+
+```xml
+<depend>rclpy</depend>
+<depend>std_msgs</depend>
+```
+
+This is equivalent to:
+```xml
+<build_depend>rclpy</build_depend>
+<exec_depend>rclpy</exec_depend>
+```
+
+:::tip
+Use `<depend>` for most dependencies to keep your package.xml clean. Only separate into build/exec when you specifically need different dependencies for building vs running.
+:::
+
+### 4. Test Dependencies (`<test_depend>`)
+
+Needed only for **testing**:
+
+```xml
+<test_depend>ament_lint_auto</test_depend>
+<test_depend>ament_lint_common</test_depend>
+<test_depend>pytest</test_depend>
+```
+
+**When to use**: Testing frameworks and tools that aren't needed for normal operation.
+
+### 5. Build Tool Dependencies (`<buildtool_depend>`)
+
+Build system tools:
+
+```xml
+<buildtool_depend>ament_cmake</buildtool_depend>
+<!-- OR -->
+<buildtool_depend>ament_python</buildtool_depend>
+```
+
+**When to use**: Always required—specifies the build system (CMake or Python).
+
+## Complete package.xml Example
+
+Here's a well-structured package.xml with various dependency types:
+
+```xml
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robot_controller</name>
+  <version>1.0.0</version>
+  <description>Controller package for mobile robot</description>
+  <maintainer email="roboticist@example.com">Jane Roboticist</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Build tool -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Core ROS 2 dependencies (needed for build and run) -->
+  <depend>rclpy</depend>
+
+  <!-- Message/Service packages -->
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <!-- Only needed at runtime -->
+  <exec_depend>robot_description</exec_depend>
+
+  <!-- Testing -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+```
+
+## Common ROS 2 Dependencies
+
+Here are packages you'll frequently depend on:
+
+### For Python Packages
+
+| Package | Purpose |
+|---------|---------|
+| `rclpy` | Python client library (always needed) |
+| `std_msgs` | Standard message types (String, Int32, etc.) |
+| `geometry_msgs` | Geometric messages (Pose, Twist, etc.) |
+| `sensor_msgs` | Sensor messages (Image, LaserScan, etc.) |
+| `nav_msgs` | Navigation messages (Odometry, Path, etc.) |
+| `tf2_ros` | Transform library for coordinate frames |
+
+### For C++ Packages
+
+| Package | Purpose |
+|---------|---------|
+| `rclcpp` | C++ client library (always needed) |
+| `std_msgs` | Standard message types |
+| `geometry_msgs` | Geometric messages |
+| `sensor_msgs` | Sensor messages |
+| `tf2_ros` | Transform library |
+| `cv_bridge` | Convert between ROS and OpenCV images |
+
+## Dependency Resolution with rosdep
+
+`rosdep` is a tool that installs system dependencies for ROS packages. It maps ROS package names to system package names.
+
+### Installing Dependencies
+
+Before building a workspace, install all dependencies:
+
+```bash
+cd ~/my_robot_ws
+
+# Update rosdep database
+rosdep update
+
+# Install all dependencies for packages in src/
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+**Flags explained**:
+- `--from-paths src`: Look for packages in the src directory
+- `--ignore-src`: Don't install packages that are in your workspace
+- `-r`: Continue despite errors
+- `-y`: Automatically say yes to installation prompts
+
+### What rosdep Does
+
+```bash
+# For a package that depends on rclpy, rosdep will:
+# 1. Look up the system package for rclpy
+# 2. Install it using your system's package manager
+
+# On Ubuntu:
+sudo apt install ros-humble-rclpy
+
+# On other systems:
+# Uses appropriate package manager (dnf, pacman, brew, etc.)
+```
+
+:::tip
+Always run `rosdep install` before building a new workspace or after cloning a project. It ensures all dependencies are installed.
+:::
+
+## Finding Package Dependencies
+
+Not sure what dependencies you need? Here are ways to discover them:
+
+### 1. Check Import Statements
+
+For Python packages, look at your imports:
+
+```python
+import rclpy                    # Need: rclpy
+from std_msgs.msg import String # Need: std_msgs
+from geometry_msgs.msg import Twist  # Need: geometry_msgs
+```
+
+### 2. Use ros2 pkg Command
+
+Find information about any package:
+
+```bash
+# List all packages
+ros2 pkg list
+
+# Get package location
+ros2 pkg prefix std_msgs
+
+# Get package executables
+ros2 pkg executables rclpy
+```
+
+### 3. Check Documentation
+
+Look at the [ROS 2 package index](https://index.ros.org/):
+
+```bash
+# Or use the command line
+ros2 pkg xml std_msgs
+```
+
+## Circular Dependencies
+
+A **circular dependency** occurs when Package A depends on Package B, and Package B depends on Package A:
+
+```
+Package A → depends on → Package B
+Package B → depends on → Package A  ❌ CIRCULAR!
+```
+
+### Why It's Bad
+
+Circular dependencies:
+- Prevent proper build ordering
+- Make code harder to maintain
+- Indicate poor architecture
+
+### How to Fix
+
+**Solution 1: Extract Common Code**
+
+```
+Before:
+  package_a ←→ package_b
+
+After:
+  package_a → common_package
+  package_b → common_package
+```
+
+**Solution 2: Merge Packages**
+
+If two packages are tightly coupled, they might belong together:
+
+```
+package_a + package_b = unified_package
+```
+
+**Solution 3: Invert Dependency**
+
+Sometimes one package should depend on the other, not both:
+
+```
+package_a → package_b  ✓ (package_a depends on package_b)
+```
+
+## Dependency Best Practices
+
+### 1. Minimal Dependencies
+
+Only declare dependencies you actually use:
+
+```xml
+<!-- BAD: Listing everything just in case -->
+<depend>rclpy</depend>
+<depend>std_msgs</depend>
+<depend>geometry_msgs</depend>
+<depend>sensor_msgs</depend>
+<depend>nav_msgs</depend>
+<depend>tf2_ros</depend>
+<!-- ... when you only use rclpy and std_msgs -->
+
+<!-- GOOD: Only what you need -->
+<depend>rclpy</depend>
+<depend>std_msgs</depend>
+```
+
+### 2. Explicit Dependencies
+
+Don't rely on transitive dependencies:
+
+```python
+# If you use geometry_msgs...
+from geometry_msgs.msg import Twist
+
+# ...declare it explicitly in package.xml:
+<depend>geometry_msgs</depend>
+
+# Don't assume it comes through another package!
+```
+
+### 3. Version Constraints (Advanced)
+
+You can specify version requirements:
+
+```xml
+<depend version_gte="1.0.0">my_package</depend>  <!-- >= 1.0.0 -->
+<depend version_lte="2.0.0">my_package</depend>  <!-- <= 2.0.0 -->
+<depend version_eq="1.5.0">my_package</depend>   <!-- == 1.5.0 -->
+```
+
+### 4. Organize by Category
+
+Group related dependencies:
+
+```xml
+<!-- Core ROS 2 -->
+<depend>rclpy</depend>
+
+<!-- Message types -->
+<depend>std_msgs</depend>
+<depend>sensor_msgs</depend>
+
+<!-- Custom packages -->
+<depend>robot_description</depend>
+<depend>robot_interfaces</depend>
+
+<!-- Testing -->
+<test_depend>pytest</test_depend>
+```
+
+## Common Dependency Issues
+
+### Issue 1: Missing Dependency
+
+**Symptom**: Build or runtime error:
+```
+ModuleNotFoundError: No module named 'geometry_msgs'
+```
+
+**Solution**: Add to package.xml:
+```xml
+<depend>geometry_msgs</depend>
+```
+
+Then install and rebuild:
+```bash
+rosdep install --from-paths src --ignore-src -r -y
+colcon build
+source install/setup.bash
+```
+
+### Issue 2: Dependency Not Found by rosdep
+
+**Symptom**:
+```
+ERROR: the following packages/stacks could not have their rosdep keys resolved to system dependencies:
+my_custom_package: Cannot locate rosdep definition for [my_custom_package]
+```
+
+**Solution**: This is expected for your own packages. Use `--ignore-src`:
+```bash
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+### Issue 3: Wrong Build Type
+
+**Symptom**: C++ package won't build with ament_python
+
+**Solution**: Match buildtool to language:
+```xml
+<!-- Python packages -->
+<buildtool_depend>ament_python</buildtool_depend>
+
+<!-- C++ packages -->
+<buildtool_depend>ament_cmake</buildtool_depend>
+```
+
+## Try It Yourself
+
+### Exercise 1: Add Dependencies
+
+Create a package that depends on multiple message types:
+
+```bash
+ros2 pkg create --build-type ament_python multi_msg_node
+```
+
+Add code that uses:
+- `std_msgs/String`
+- `geometry_msgs/Twist`
+- `sensor_msgs/LaserScan`
+
+Update package.xml with correct dependencies, then build.
+
+### Exercise 2: Dependency Detective
+
+Given this Python node, identify all required dependencies:
+
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from geometry_msgs.msg import Pose
+from cv_bridge import CvBridge
+import cv2
+
+class ImageProcessor(Node):
+    def __init__(self):
+        super().__init__('image_processor')
+        self.subscription = self.create_subscription(
+            Image, 'camera/image', self.image_callback, 10)
+        self.bridge = CvBridge()
+```
+
+**Answer**:
+```xml
+<depend>rclpy</depend>
+<depend>sensor_msgs</depend>
+<depend>geometry_msgs</depend>
+<depend>cv_bridge</depend>
+```
+
+### Exercise 3: Fix Circular Dependencies
+
+You have:
+- `robot_brain` depends on `robot_sensors`
+- `robot_sensors` depends on `robot_brain`
+
+Redesign the architecture to eliminate the circular dependency.
+
+## Checking Your Dependencies
+
+Verify your dependencies are correct:
+
+```bash
+# Check what packages are installed
+ros2 pkg list | grep my_package
+
+# Verify dependency resolution
+rosdep check --from-paths src --ignore-src
+
+# See dependency tree
+colcon graph --packages-select my_package
+```
+
+## Summary
+
+In this section, you learned:
+
+- Different types of dependencies: build, exec, test, and build tool
+- How to declare dependencies in package.xml
+- Using `rosdep` to install system dependencies
+- Identifying and fixing common dependency issues
+- Best practices for dependency management
+- Avoiding circular dependencies
+
+## Next Steps
+
+Now that you understand dependencies, let's learn how to build packages efficiently with colcon in [4.3 Building with colcon →](./4.3-colcon-build)
+
+---
+
+**Navigation**
+
+- [← Back: 4.1 Package Structure](./4.1-package-structure)
+- [Next: 4.3 Building with colcon →](./4.3-colcon-build)

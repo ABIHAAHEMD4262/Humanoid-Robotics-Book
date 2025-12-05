@@ -1,16 +1,17 @@
 ---
 sidebar_position: 1
-sidebar_label: Welcome
+sidebar_label: Introduction
 description: Introduction to Physical AI and Humanoid Robotics - A beginner-friendly guide to embodied intelligence
 keywords: [physical ai, humanoid robotics, embodied intelligence, robotics introduction]
 tags: [introduction, getting-started]
 ---
 
 # Welcome to Physical AI & Humanoid Robotics
-
+:::tip 
 **Estimated Reading Time**: 8 minutes
 **Prerequisites**: None
 **Difficulty**: Beginner
+:::
 
 ## Introduction
 

@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Physical AI & Humanoid Robotics Book',
   tagline: 'Embodied Intelligence with ROS 2, Isaac Sim, and Vision-Language-Action Models',
-  favicon: 'img/favicon.ic',
+  
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -82,7 +82,7 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/hero-img.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },

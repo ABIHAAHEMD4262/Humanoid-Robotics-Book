@@ -1,0 +1,667 @@
+# 3.3 Xacro Macros & Properties
+
+**Estimated Reading Time**: 13 minutes
+**Prerequisites**: 3.1 URDF Basics, 3.2 Visual & Collision Geometry
+**Difficulty**: Intermediate
+
+## Introduction
+
+URDF files get long and repetitive. Humanoid robots have symmetric parts (left/right legs, arms). Writing everything twice causes errors.
+
+**Xacro** (XML Macros) solves this. It adds:
+- **Properties**: Variables for reusable values
+- **Macros**: Templates for repeated structures
+- **Math**: Calculate derived values
+- **Includes**: Split files for organization
+
+Xacro files use `.xacro` extension. They compile to URDF.
+
+## What is Xacro?
+
+Xacro is a preprocessing language for URDF. It generates URDF from templates.
+
+**Workflow**:
+```
+robot.urdf.xacro → [xacro processor] → robot.urdf → ROS 2
+```
+
+### Basic Xacro File
+
+```xml title="simple.urdf.xacro"
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_robot">
+
+  <xacro:property name="width" value="0.3"/>
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${width} ${width} 0.1"/>
+      </geometry>
+    </visual>
+  </link>
+
+</robot>
+```
+
+**Key elements**:
+- `xmlns:xacro`: Declares Xacro namespace
+- `<xacro:property>`: Define variable
+- `${variable}`: Use variable value
+
+### Compiling Xacro to URDF
+
+```bash
+xacro robot.urdf.xacro > robot.urdf
+```
+
+Or directly in launch files (recommended):
+```python
+robot_description = Command(['xacro ', robot_file])
+```
+
+## Properties - Variables
+
+Properties store reusable values.
+
+### Defining Properties
+
+```xml
+<xacro:property name="pi" value="3.14159"/>
+<xacro:property name="wheel_radius" value="0.1"/>
+<xacro:property name="base_width" value="0.5"/>
+<xacro:property name="leg_length" value="0.4"/>
+```
+
+### Using Properties
+
+```xml
+<link name="wheel">
+  <visual>
+    <geometry>
+      <cylinder radius="${wheel_radius}" length="0.05"/>
+    </geometry>
+  </visual>
+</link>
+
+<joint name="wheel_joint" type="continuous">
+  <origin xyz="0 ${base_width/2} -${wheel_radius}" rpy="0 0 0"/>
+  <axis xyz="0 1 0"/>
+</joint>
+```
+
+**Math in properties**:
+```xml
+<!-- Division -->
+<origin xyz="0 ${base_width/2} 0"/>
+
+<!-- Multiplication -->
+<origin xyz="0 0 ${leg_length*2}"/>
+
+<!-- Addition/Subtraction -->
+<origin xyz="0 ${base_width/2 + 0.1} 0"/>
+```
+
+### Property Scope
+
+Properties can be:
+- **Global**: Defined at robot level
+- **Local**: Defined within macros
+
+```xml
+<!-- Global property -->
+<xacro:property name="arm_length" value="0.3"/>
+
+<xacro:macro name="arm" params="prefix">
+  <!-- Local property (only within macro) -->
+  <xacro:property name="segment_length" value="${arm_length/2}"/>
+
+  <link name="${prefix}_upper_arm">
+    <visual>
+      <geometry>
+        <cylinder radius="0.04" length="${segment_length}"/>
+      </geometry>
+    </visual>
+  </link>
+</xacro:macro>
+```
+
+## Macros - Templates
+
+Macros are parameterized templates for repeated structures.
+
+### Basic Macro
+
+```xml
+<xacro:macro name="wheel" params="prefix reflect">
+  <link name="${prefix}_wheel">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="0.05"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.1 0.1 0.1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="0.1" length="0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="${prefix}_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="${prefix}_wheel"/>
+    <origin xyz="0 ${reflect*0.3} -0.1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+</xacro:macro>
+```
+
+**Macro elements**:
+- `name`: Macro identifier
+- `params`: Space-separated parameter list
+- `${param}`: Parameter substitution
+
+### Calling Macros
+
+```xml
+<!-- Create left wheel (reflect=1) -->
+<xacro:wheel prefix="left" reflect="1"/>
+
+<!-- Create right wheel (reflect=-1) -->
+<xacro:wheel prefix="right" reflect="-1"/>
+```
+
+This generates 2 wheels, mirrored across Y-axis.
+
+### Macro with Default Parameters
+
+```xml
+<xacro:macro name="leg" params="prefix reflect:=1 mass:=2.0">
+  <link name="${prefix}_thigh">
+    <inertial>
+      <mass value="${mass}"/>
+      ...
+    </inertial>
+    ...
+  </link>
+
+  <joint name="${prefix}_hip" type="revolute">
+    <origin xyz="0 ${reflect*0.15} 0" rpy="0 0 0"/>
+    ...
+  </joint>
+</xacro:macro>
+```
+
+**Default syntax**: `param:=default_value`
+
+**Usage**:
+```xml
+<!-- Use defaults -->
+<xacro:leg prefix="left"/>
+
+<!-- Override mass -->
+<xacro:leg prefix="right" mass="2.5"/>
+
+<!-- Override both -->
+<xacro:leg prefix="left" reflect="-1" mass="1.8"/>
+```
+
+## Humanoid Leg Example
+
+```xml title="humanoid_leg.xacro"
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="humanoid">
+
+  <!-- Properties -->
+  <xacro:property name="thigh_length" value="0.4"/>
+  <xacro:property name="shin_length" value="0.4"/>
+  <xacro:property name="foot_length" value="0.2"/>
+  <xacro:property name="leg_radius" value="0.05"/>
+
+  <!-- Leg macro -->
+  <xacro:macro name="leg" params="prefix reflect">
+
+    <!-- Thigh link -->
+    <link name="${prefix}_thigh">
+      <visual>
+        <origin xyz="0 0 ${-thigh_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${thigh_length}"/>
+        </geometry>
+        <material name="gray">
+          <color rgba="0.5 0.5 0.5 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${-thigh_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${thigh_length}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Hip joint -->
+    <joint name="${prefix}_hip" type="revolute">
+      <parent link="pelvis"/>
+      <child link="${prefix}_thigh"/>
+      <origin xyz="0 ${reflect*0.15} -0.05" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-0.5" upper="2.0" effort="150" velocity="1.0"/>
+    </joint>
+
+    <!-- Shin link -->
+    <link name="${prefix}_shin">
+      <visual>
+        <origin xyz="0 0 ${-shin_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius*0.9}" length="${shin_length}"/>
+        </geometry>
+        <material name="gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${-shin_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius*0.9}" length="${shin_length}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Knee joint -->
+    <joint name="${prefix}_knee" type="revolute">
+      <parent link="${prefix}_thigh"/>
+      <child link="${prefix}_shin"/>
+      <origin xyz="0 0 ${-thigh_length}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="0" upper="2.5" effort="100" velocity="1.0"/>
+    </joint>
+
+    <!-- Foot link -->
+    <link name="${prefix}_foot">
+      <visual>
+        <origin xyz="${foot_length/2} 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${foot_length} 0.1 0.05"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.1 0.1 0.1 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="${foot_length/2} 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${foot_length} 0.1 0.05"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Ankle joint -->
+    <joint name="${prefix}_ankle" type="revolute">
+      <parent link="${prefix}_shin"/>
+      <child link="${prefix}_foot"/>
+      <origin xyz="0 0 ${-shin_length}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-0.7" upper="0.7" effort="50" velocity="1.0"/>
+    </joint>
+
+  </xacro:macro>
+
+  <!-- Base pelvis -->
+  <link name="pelvis">
+    <visual>
+      <geometry>
+        <box size="0.3 0.4 0.1"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Create both legs -->
+  <xacro:leg prefix="left" reflect="1"/>
+  <xacro:leg prefix="right" reflect="-1"/>
+
+</robot>
+```
+
+**Result**: Complete humanoid lower body with 6 DOF (3 joints × 2 legs).
+
+## Conditional Statements
+
+Xacro supports conditional logic:
+
+```xml
+<xacro:macro name="sensor" params="type">
+  <link name="sensor_link">
+    <visual>
+      <geometry>
+        <xacro:if value="${type == 'camera'}">
+          <box size="0.05 0.1 0.03"/>
+        </xacro:if>
+        <xacro:unless value="${type == 'camera'}">
+          <cylinder radius="0.03" length="0.08"/>
+        </xacro:unless>
+      </geometry>
+    </visual>
+  </link>
+</xacro:macro>
+
+<!-- Create camera sensor -->
+<xacro:sensor type="camera"/>
+
+<!-- Create LIDAR sensor -->
+<xacro:sensor type="lidar"/>
+```
+
+## Includes - File Organization
+
+Split large robots into multiple files:
+
+### Main File
+
+```xml title="robot.urdf.xacro"
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="humanoid">
+
+  <!-- Include macro files -->
+  <xacro:include filename="$(find robot_description)/urdf/leg.xacro"/>
+  <xacro:include filename="$(find robot_description)/urdf/arm.xacro"/>
+  <xacro:include filename="$(find robot_description)/urdf/head.xacro"/>
+
+  <!-- Base body -->
+  <link name="torso">
+    <visual>
+      <geometry>
+        <box size="0.3 0.5 0.6"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Use included macros -->
+  <xacro:leg prefix="left" reflect="1"/>
+  <xacro:leg prefix="right" reflect="-1"/>
+  <xacro:arm prefix="left" reflect="1"/>
+  <xacro:arm prefix="right" reflect="-1"/>
+  <xacro:head/>
+
+</robot>
+```
+
+### Macro File
+
+```xml title="arm.xacro"
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="arm" params="prefix reflect">
+    <!-- Arm definition here -->
+  </xacro:macro>
+
+</robot>
+```
+
+**File structure**:
+```
+robot_description/
+└── urdf/
+    ├── robot.urdf.xacro    (main file)
+    ├── leg.xacro           (leg macro)
+    ├── arm.xacro           (arm macro)
+    ├── head.xacro          (head macro)
+    └── materials.xacro     (color definitions)
+```
+
+## Block Parameters
+
+Pass entire XML blocks as parameters:
+
+```xml
+<xacro:macro name="link_with_mesh" params="name *visual_geometry *collision_geometry">
+  <link name="${name}">
+    <visual>
+      <xacro:insert_block name="visual_geometry"/>
+      <material name="gray">
+        <color rgba="0.7 0.7 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <xacro:insert_block name="collision_geometry"/>
+    </collision>
+  </link>
+</xacro:macro>
+
+<!-- Use with block parameters -->
+<xacro:link_with_mesh name="forearm">
+  <visual_geometry>
+    <geometry>
+      <mesh filename="package://robot/meshes/forearm.dae"/>
+    </geometry>
+  </visual_geometry>
+  <collision_geometry>
+    <geometry>
+      <cylinder radius="0.04" length="0.3"/>
+    </geometry>
+  </collision_geometry>
+</xacro:link_with_mesh>
+```
+
+**Block parameter syntax**:
+- Define: `*param_name` in params list
+- Use: `<xacro:insert_block name="param_name"/>`
+
+## Math Operations
+
+Xacro supports Python-like math:
+
+```xml
+<!-- Arithmetic -->
+${2 + 3}         <!-- 5 -->
+${10 - 4}        <!-- 6 -->
+${3 * 4}         <!-- 12 -->
+${10 / 2}        <!-- 5.0 -->
+
+<!-- With properties -->
+<xacro:property name="length" value="0.5"/>
+${length * 2}    <!-- 1.0 -->
+${length / 2}    <!-- 0.25 -->
+
+<!-- Trigonometry -->
+${sin(pi/2)}     <!-- 1.0 -->
+${cos(0)}        <!-- 1.0 -->
+${radians(90)}   <!-- 1.5708 (90° to radians) -->
+
+<!-- Advanced -->
+${sqrt(16)}      <!-- 4.0 -->
+${pow(2, 3)}     <!-- 8 -->
+```
+
+## Common Patterns
+
+### Pattern 1: Symmetric Robot Parts
+
+```xml
+<xacro:macro name="arm" params="prefix reflect">
+  <!-- Entire arm definition -->
+</xacro:macro>
+
+<xacro:arm prefix="left" reflect="1"/>
+<xacro:arm prefix="right" reflect="-1"/>
+```
+
+### Pattern 2: Configurable Robot Variants
+
+```xml
+<!-- Properties for different robot sizes -->
+<xacro:property name="robot_scale" value="1.0"/>  <!-- Change to 0.5 for half-size -->
+
+<link name="torso">
+  <visual>
+    <geometry>
+      <box size="${0.3*robot_scale} ${0.5*robot_scale} ${0.6*robot_scale}"/>
+    </geometry>
+  </visual>
+</link>
+```
+
+### Pattern 3: Material Library
+
+```xml title="materials.xacro"
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <material name="black">
+    <color rgba="0.1 0.1 0.1 1"/>
+  </material>
+  <material name="white">
+    <color rgba="0.9 0.9 0.9 1"/>
+  </material>
+  <material name="red">
+    <color rgba="0.8 0 0 1"/>
+  </material>
+  <material name="blue">
+    <color rgba="0 0 0.8 1"/>
+  </material>
+</robot>
+```
+
+Include and use:
+```xml
+<xacro:include filename="materials.xacro"/>
+
+<link name="part">
+  <visual>
+    <geometry>...</geometry>
+    <material name="blue"/>
+  </visual>
+</link>
+```
+
+## Best Practices
+
+### 1. Use Descriptive Property Names
+
+```xml
+<!-- Good -->
+<xacro:property name="leg_thigh_length" value="0.4"/>
+<xacro:property name="arm_upper_length" value="0.3"/>
+
+<!-- Bad -->
+<xacro:property name="l1" value="0.4"/>
+<xacro:property name="l2" value="0.3"/>
+```
+
+### 2. Group Related Properties
+
+```xml
+<!-- Leg dimensions -->
+<xacro:property name="leg_thigh_length" value="0.4"/>
+<xacro:property name="leg_shin_length" value="0.4"/>
+<xacro:property name="leg_foot_length" value="0.2"/>
+<xacro:property name="leg_radius" value="0.05"/>
+
+<!-- Arm dimensions -->
+<xacro:property name="arm_upper_length" value="0.3"/>
+<xacro:property name="arm_lower_length" value="0.25"/>
+<xacro:property name="arm_radius" value="0.04"/>
+```
+
+### 3. Comment Complex Macros
+
+```xml
+<!--
+  Creates a complete robot leg with hip, knee, and ankle joints.
+
+  Parameters:
+    - prefix: "left" or "right"
+    - reflect: 1 for left, -1 for right (mirrors Y-axis)
+    - mass_scale: Multiplier for link masses (default 1.0)
+-->
+<xacro:macro name="leg" params="prefix reflect mass_scale:=1.0">
+  ...
+</xacro:macro>
+```
+
+### 4. One Macro Per File for Large Robots
+
+```
+urdf/
+├── robot.urdf.xacro
+├── macros/
+│   ├── leg.xacro
+│   ├── arm.xacro
+│   ├── hand.xacro
+│   └── head.xacro
+└── materials.xacro
+```
+
+## Debugging Xacro
+
+### View Expanded URDF
+
+```bash
+xacro robot.urdf.xacro
+```
+
+Output shows final URDF after macro expansion.
+
+### Check for Errors
+
+```bash
+xacro robot.urdf.xacro > /tmp/robot.urdf && check_urdf /tmp/robot.urdf
+```
+
+### Common Xacro Errors
+
+**Error**: `xacro: error: Property wasn't defined`
+```xml
+<!-- Forgot to define property -->
+<origin xyz="${undefined_var} 0 0"/>
+```
+
+**Fix**: Define the property first
+```xml
+<xacro:property name="undefined_var" value="0.5"/>
+<origin xyz="${undefined_var} 0 0"/>
+```
+
+**Error**: `xacro: error: expected type double, got 'abc'`
+```xml
+<!-- Wrong type for math -->
+<origin xyz="${'abc' + 1} 0 0"/>
+```
+
+**Fix**: Use numeric values
+```xml
+<xacro:property name="offset" value="0.5"/>
+<origin xyz="${offset + 0.1} 0 0"/>
+```
+
+## Summary
+
+- **Xacro** adds programming features to URDF
+- **Properties**: Variables for reusable values
+- **Macros**: Templates for repeated structures
+- **Math**: Calculate derived values
+- **Includes**: Organize code across files
+- **Conditionals**: `<xacro:if>` and `<xacro:unless>`
+- Use `${variable}` for substitution
+- Compile with `xacro file.urdf.xacro`
+- Best practice: One macro per file for large robots
+
+## Next Steps
+
+Continue to [3.4 Inertial Properties & Physics](./3.4-inertial-physics.mdx) to learn how to add mass and inertia for realistic physics simulation.
+
+**Related topics**:
+- [3.1 URDF Basics](./3.1-urdf-basics.mdx)
+- [3.2 Visual & Collision Geometry](./3.2-visual-collision.mdx)
+- [Chapter 3 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a leg macro and use it for left/right legs
+2. Define properties for all robot dimensions
+3. Split a large URDF into multiple Xacro files
+4. Create a configurable robot variant (small/large) using properties

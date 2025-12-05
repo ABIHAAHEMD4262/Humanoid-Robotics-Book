@@ -1,0 +1,708 @@
+# 5.4 Visualization & Testing in RViz
+
+:::tip Estimated Time
+**15 minutes**
+:::
+
+This is it—the moment you've been building toward! In this final section, we'll bring your humanoid to life in RViz. You'll see your mathematical trajectories transform into actual walking motion. Let's make your robot walk!
+
+## Understanding the Visualization Pipeline
+
+### The ROS 2 Visualization Stack
+
+To visualize our walking humanoid, we need three components working together:
+
+1. **URDF Model** → Defines the robot's structure (already done!)
+2. **Joint States** → Provides current joint positions (your gait publisher!)
+3. **Robot State Publisher** → Transforms joint states into 3D poses
+4. **RViz** → Visualizes the robot in 3D
+
+Here's the data flow:
+
+```
+GaitPublisher → /joint_states → RobotStatePublisher → /tf → RViz
+```
+
+:::info What is robot_state_publisher?
+`robot_state_publisher` subscribes to `/joint_states`, reads your URDF, and publishes transformations (`/tf`) that represent where each link is in 3D space. This is what makes your robot model move in RViz!
+:::
+
+## Step 1: Create the Complete Launch File
+
+Let's create a launch file that brings everything together:
+
+```python title="launch/display_walking.launch.py"
+#!/usr/bin/env python3
+"""
+Complete launch file for visualizing walking humanoid in RViz.
+
+This launch file starts:
+1. robot_state_publisher (with URDF)
+2. gait_publisher_node (joint trajectory generator)
+3. RViz (with custom configuration)
+"""
+
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration, Command
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    """Generate the launch description for walking visualization."""
+
+    # Get package directories
+    pkg_share = get_package_share_directory('gait_publisher')
+
+    # File paths
+    urdf_file = os.path.join(pkg_share, 'urdf', 'simple_humanoid.urdf')
+    rviz_config_file = os.path.join(pkg_share, 'config', 'walking_viz.rviz')
+    params_file = os.path.join(pkg_share, 'config', 'gait_params.yaml')
+
+    # Declare launch arguments
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation time'
+    )
+
+    # Read URDF file
+    with open(urdf_file, 'r') as infp:
+        robot_description = infp.read()
+
+    # Robot State Publisher Node
+    # This node publishes the robot's state based on URDF and joint states
+    robot_state_publisher_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': LaunchConfiguration('use_sim_time')
+        }]
+    )
+
+    # Gait Publisher Node
+    # This node generates and publishes walking joint trajectories
+    gait_publisher_node = Node(
+        package='gait_publisher',
+        executable='gait_publisher_node',
+        name='gait_publisher',
+        output='screen',
+        parameters=[params_file]
+    )
+
+    # RViz Node
+    # Visualization tool
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file] if os.path.exists(rviz_config_file) else []
+    )
+
+    return LaunchDescription([
+        use_sim_time_arg,
+        robot_state_publisher_node,
+        gait_publisher_node,
+        rviz_node,
+    ])
+```
+
+## Step 2: Create RViz Configuration
+
+Now let's create an RViz configuration that's optimized for viewing walking motion:
+
+```yaml title="config/walking_viz.rviz"
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /RobotModel1
+        - /TF1
+      Splitter Ratio: 0.5
+    Tree Height: 549
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Expanded:
+      - /2D Goal Pose1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.5886790156364441
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 10
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_ankle_joint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        left_foot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_hip_joint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        left_knee_joint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        left_shin:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_thigh:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_ankle_joint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        right_foot:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_hip_joint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        right_knee_joint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        right_shin:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_thigh:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        base_link:
+          Value: true
+        left_foot:
+          Value: true
+        left_shin:
+          Value: true
+        left_thigh:
+          Value: true
+        right_foot:
+          Value: true
+        right_shin:
+          Value: true
+        right_thigh:
+          Value: true
+      Marker Scale: 0.3
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        base_link:
+          left_thigh:
+            left_shin:
+              left_foot:
+                {}
+          right_thigh:
+            right_shin:
+              right_foot:
+                {}
+      Update Interval: 0
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: base_link
+    Frame Rate: 50
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose
+    - Class: rviz_default_plugins/PublishPoint
+      Single click: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.5
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: -0.4
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.3
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 0.785
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 846
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd000000040000000000000156000002b0fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d000002b0000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002b0fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d000002b0000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004b00000003efc0100000002fb0000000800540069006d00650100000000000004b0000002fb00fffffffb0000000800540069006d0065010000000000000450000000000000000000000247000002b000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1200
+  X: 100
+  Y: 100
+```
+
+## Step 3: Build and Launch
+
+Let's rebuild and launch the complete system:
+
+```bash
+# Navigate to workspace root
+cd ~/humanoid_ws
+
+# Build
+colcon build --packages-select gait_publisher
+
+# Source
+source install/setup.bash
+
+# Launch the complete visualization
+ros2 launch gait_publisher display_walking.launch.py
+```
+
+## Step 4: What You Should See
+
+When RViz opens, you should see:
+
+### Initial View
+- **Grid**: A reference grid on the floor
+- **Robot model**: Your humanoid standing upright
+- **TF frames**: Coordinate frames for each link
+
+### Walking Motion
+Within a few seconds, you should see:
+- ✅ **Legs alternating**: Left forward when right is back
+- ✅ **Knees bending**: During swing phase (leg forward motion)
+- ✅ **Smooth motion**: No jerky or discontinuous movements
+- ✅ **Periodic pattern**: Motion repeats every 2 seconds (at 0.5 Hz)
+
+:::tip What to Look For
+Watch the feet! You should see them lifting off the ground during swing and staying relatively stationary during stance. The motion should look like walking in place.
+:::
+
+## Step 5: RViz Camera Controls
+
+Optimize your view with these camera controls:
+
+### Mouse Controls
+- **Left-click + drag**: Orbit around the robot
+- **Middle-click + drag**: Pan the view
+- **Right-click + drag**: Zoom in/out
+- **Scroll wheel**: Zoom in/out
+
+### Recommended Viewing Angle
+1. Orbit to view from the side (sagittal plane)
+2. Zoom to see the full robot
+3. Set focal point at robot's center of mass
+
+You can also view from:
+- **Front**: See left-right leg coordination
+- **Top**: See leg positions from above
+- **Isometric**: 45° angle showing 3D motion
+
+## Step 6: Analyzing the Motion
+
+Let's verify that our gait is correct. Open a new terminal:
+
+```bash
+source ~/humanoid_ws/install/setup.bash
+
+# Monitor joint state messages
+ros2 topic echo /joint_states --field name,position
+```
+
+You should see periodic values like:
+```
+name:
+- left_hip_joint
+- left_knee_joint
+- left_ankle_joint
+- right_hip_joint
+- right_knee_joint
+- right_ankle_joint
+position:
+- 0.0234567
+- -0.0456789
+- 0.0012345
+- -0.0234567
+- -0.0456789
+- -0.0012345
+```
+
+### Verification Checks
+
+✅ **Hip values opposite**: Left and right hips should have opposite signs
+✅ **Knee values negative**: Knees bend backward (negative angles)
+✅ **Values changing**: Should update 50 times per second
+✅ **Smooth transitions**: No sudden jumps in values
+
+## Step 7: Experimenting with Parameters
+
+Try different gait styles! Edit `config/gait_params.yaml`:
+
+### Fast Walk
+```yaml
+gait_publisher:
+  ros__parameters:
+    step_frequency: 0.8      # Faster steps
+    step_height: 0.06        # Lower steps
+    stride_length: 0.20      # Longer strides
+```
+
+### Slow March
+```yaml
+gait_publisher:
+  ros__parameters:
+    step_frequency: 0.3      # Slower steps
+    step_height: 0.15        # High knee lift
+    stride_length: 0.08      # Short strides
+```
+
+### Cautious Walk
+```yaml
+gait_publisher:
+  ros__parameters:
+    step_frequency: 0.4
+    step_height: 0.04        # Barely lift feet
+    stride_length: 0.10
+```
+
+After editing, relaunch:
+```bash
+ros2 launch gait_publisher display_walking.launch.py
+```
+
+## Step 8: Debugging Common Issues
+
+### Issue: Robot doesn't move in RViz
+
+**Check 1**: Verify joint states are publishing:
+```bash
+ros2 topic hz /joint_states
+```
+
+**Check 2**: Verify robot_state_publisher is running:
+```bash
+ros2 node list
+```
+
+**Check 3**: Check for TF data:
+```bash
+ros2 run tf2_tools view_frames
+```
+
+### Issue: Robot parts are disconnected or distorted
+
+**Problem**: URDF joint limits may be exceeded
+
+**Solution**: Check your gait parameters are reasonable:
+```bash
+ros2 param get /gait_publisher step_height
+ros2 param get /gait_publisher stride_length
+```
+
+Reduce values if needed.
+
+### Issue: RViz shows errors about transforms
+
+**Problem**: TF tree might be incomplete
+
+**Solution**: Check TF tree:
+```bash
+ros2 run tf2_tools view_frames
+evince frames.pdf  # or open frames.pdf
+```
+
+Verify all joints are connected from base_link.
+
+### Issue: Motion looks jerky or stuttering
+
+**Check 1**: Verify 50 Hz publishing:
+```bash
+ros2 topic hz /joint_states
+```
+
+**Check 2**: Check CPU usage:
+```bash
+top
+```
+
+If CPU is maxed, reduce publish frequency:
+```yaml
+publish_frequency: 25.0  # Lower frequency
+```
+
+## Step 9: Recording Your Walking Robot
+
+Let's record a video of your achievement!
+
+```bash
+# Start recording (in a new terminal)
+ros2 bag record -o walking_demo /joint_states /tf /tf_static
+
+# Let it run for 10 seconds while robot walks
+
+# Stop with Ctrl+C
+```
+
+Playback later:
+```bash
+ros2 bag play walking_demo
+```
+
+## Checkpoint: What You've Accomplished
+
+Congratulations! You've built a complete ROS 2 system. Let's celebrate what you've achieved:
+
+✅ **Created a full ROS 2 package** with proper structure
+✅ **Implemented gait mathematics** for bipedal walking
+✅ **Built a real-time publisher** at 50 Hz control frequency
+✅ **Integrated with robot visualization** using standard ROS 2 tools
+✅ **Configured RViz** for optimal viewing
+✅ **Tested and verified** walking motion
+✅ **Experimented with parameters** to create different gaits
+
+## Improvements and Extensions
+
+Want to take this further? Here are some ideas:
+
+### Beginner Extensions
+1. **Add start/stop service**: Create a service to enable/disable walking
+2. **Variable speed**: Add a parameter to scale the overall speed
+3. **Different gaits**: Create preset configurations (walk, run, march)
+
+### Intermediate Extensions
+1. **Torso stabilization**: Add upper body to maintain balance
+2. **Turn controller**: Make the robot walk in circles
+3. **Foot contact visualization**: Show when each foot is on the ground
+4. **CoM trajectory**: Visualize center of mass motion
+
+### Advanced Extensions
+1. **Dynamic balance**: Implement ZMP (Zero Moment Point) calculation
+2. **Terrain adaptation**: Adjust gait for slopes or stairs
+3. **Inverse kinematics**: Specify foot positions, compute joint angles
+4. **Full humanoid model**: Add arms, head, and complex joints
+
+## Module 1 Completion
+
+### What You've Learned in Module 1
+
+Over the past five chapters, you've mastered:
+
+**Chapter 1 - Core Concepts**
+- ROS 2 architecture and computation graph
+- Nodes, topics, messages, and services
+- The pub/sub communication pattern
+
+**Chapter 2 - Python Programming**
+- Creating ROS 2 nodes with rclpy
+- Publishers, subscribers, and timers
+- Object-oriented node design
+
+**Chapter 3 - URDF and Robot Modeling**
+- Robot description formats
+- Links, joints, and kinematic chains
+- Visualization with RViz
+
+**Chapter 4 - Packages and Workspaces**
+- Package structure and build systems
+- Dependencies and colcon
+- Launch files and configuration
+
+**Chapter 5 - Mini-Project**
+- Integrated all previous learning
+- Real-time control at 50 Hz
+- Mathematical trajectory generation
+- Complete system development
+
+### Your Skills Now
+
+You can now:
+- ✅ Build ROS 2 packages from scratch
+- ✅ Create publisher and subscriber nodes
+- ✅ Model robots with URDF
+- ✅ Implement real-time control loops
+- ✅ Visualize robots in RViz
+- ✅ Configure and launch complex systems
+- ✅ Debug multi-node ROS 2 applications
+
+## What's Next: Module 2 Preview
+
+In **Module 2: Simulation & Gazebo**, you'll learn to:
+
+- Set up Gazebo simulation environments
+- Add physics and dynamics to your robots
+- Implement controllers for real motion (not just visualization!)
+- Work with sensor data (cameras, IMUs, force sensors)
+- Test gaits with actual physics simulation
+- Develop control strategies for balance and stability
+
+Your gait publisher will become the foundation for a physically-simulated walking robot that must deal with gravity, friction, and momentum!
+
+## Final Thoughts
+
+Building this walking gait publisher was no small feat. You've:
+
+1. **Applied mathematics** to a real robotics problem
+2. **Engineered a software system** with proper architecture
+3. **Integrated multiple tools** into a cohesive whole
+4. **Created something visual and tangible** that walks!
+
+This is genuine robotics engineering. The patterns and practices you've learned here scale to professional robot development. Whether you're building humanoids, manipulators, or mobile robots, these fundamentals remain the same.
+
+:::success You Did It!
+Take a moment to appreciate what you've built. You started Module 1 learning what a ROS 2 node is, and now you have a walking humanoid robot. That's incredible progress!
+
+Save your project, share it with others, and get ready for Module 2 where we add physics and make your robot really walk!
+:::
+
+## Additional Resources
+
+### Documentation
+- [ROS 2 Tutorials](https://docs.ros.org/en/humble/Tutorials.html)
+- [robot_state_publisher](https://github.com/ros/robot_state_publisher)
+- [RViz User Guide](https://github.com/ros2/rviz)
+
+### Further Reading
+- "Introduction to Humanoid Robotics" by Kajita et al.
+- "Robotics: Modelling, Planning and Control" by Siciliano et al.
+- "Modern Robotics" by Lynch and Park
+
+### Community
+- [ROS Discourse](https://discourse.ros.org/)
+- [Robotics Stack Exchange](https://robotics.stackexchange.com/)
+- [r/ROS on Reddit](https://www.reddit.com/r/ROS/)
+
+---
+
+## Navigation
+
+← [Previous: 5.3 Publisher Node](./5.3-publisher-node.mdx) | [Next: Module 2 - Simulation →](../../module2-simulation/index.mdx)
+
+**Chapter 5 Sections**:
+- [5.1 Project Setup](./5.1-project-setup.mdx)
+- [5.2 Gait Mathematics](./5.2-gait-mathematics.mdx)
+- [5.3 Publisher Node](./5.3-publisher-node.mdx)
+- **5.4 Visualization & Testing** (You are here)
+
+**Back to**: [Chapter 5 Overview](./index.mdx) | [Module 1 Overview](../index.mdx)

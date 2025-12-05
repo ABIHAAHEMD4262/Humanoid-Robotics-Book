@@ -1,0 +1,110 @@
+# Chapter 4: ROS 2 Packages & Build Systems
+
+Welcome to Chapter 4! Now that you've learned about ROS 2 core concepts, Python programming with rclpy, and robot modeling with URDF/Xacro, it's time to understand how to organize and build real ROS 2 projects.
+
+## Overview
+
+In this chapter, you'll learn how to structure, build, and manage ROS 2 packages—the fundamental units of organization in ROS 2. Think of packages as containers that hold your nodes, launch files, configuration files, and other resources in a structured way.
+
+**Estimated Time**: 35-40 minutes
+
+## What You'll Learn
+
+By the end of this chapter, you'll be able to:
+
+- Create and structure ROS 2 packages from scratch
+- Understand workspace organization and build systems
+- Manage dependencies between packages
+- Build packages efficiently using colcon
+- Write launch files to coordinate multiple nodes
+- Debug common package and build issues
+
+## Chapter Structure
+
+This chapter is divided into 4 subtopics:
+
+### [4.1 Package Structure & Workspace](./4.1-package-structure)
+*10 minutes*
+
+Learn what ROS 2 packages are, how workspaces are organized, and how to create your first package. You'll understand the anatomy of package.xml and the difference between Python and C++ packages.
+
+### [4.2 Dependencies & package.xml](./4.2-dependencies)
+*8 minutes*
+
+Master dependency management in ROS 2. Learn how to declare build, execution, and test dependencies, and how to use rosdep for system-level dependencies.
+
+### [4.3 Building with colcon](./4.3-colcon-build)
+*9 minutes*
+
+Dive into the colcon build system—the tool that compiles and installs your ROS 2 packages. Learn build commands, flags, troubleshooting techniques, and best practices.
+
+### [4.4 Launch Files & Multi-Node Systems](./4.4-launch-files)
+*12 minutes*
+
+Discover how to launch multiple nodes simultaneously using launch files. Learn Python launch file syntax and how to coordinate complex multi-node robot systems.
+
+## Prerequisites
+
+Before starting this chapter, you should:
+
+- Have completed Chapters 1-3 of Module 1
+- Have ROS 2 installed and configured
+- Be comfortable with basic terminal commands
+- Understand Python basics (from Chapter 2)
+
+## What You'll Build
+
+Throughout this chapter, you'll build:
+
+1. **A multi-package workspace** with organized structure
+2. **A custom robot package** with proper dependencies
+3. **Launch files** that coordinate multiple nodes
+4. **A complete sensor processing system** with multiple interconnected nodes
+
+## Why This Matters
+
+Understanding packages and build systems is crucial because:
+
+- **Organization**: Packages keep your code modular and maintainable
+- **Reusability**: Well-structured packages can be shared across projects
+- **Collaboration**: Standard package structure makes team collaboration easier
+- **Scalability**: Proper dependency management helps projects grow without breaking
+- **Professional Development**: Industry ROS 2 projects always use proper package structure
+
+## Real-World Context
+
+In professional robotics development:
+
+- **Small Projects**: 5-10 packages for a simple robot
+- **Medium Projects**: 20-50 packages for complex systems
+- **Large Projects**: 100+ packages in enterprise robotics platforms
+
+Each package typically contains related functionality (sensors, navigation, manipulation, etc.), making the overall system easier to understand and maintain.
+
+## Chapter Philosophy
+
+This chapter follows a build-up approach:
+
+1. **Foundation**: Understanding workspace and package structure
+2. **Dependencies**: Learning how packages connect and depend on each other
+3. **Building**: Mastering the build process with colcon
+4. **Integration**: Combining multiple nodes with launch files
+
+By the end, you'll be able to create professional, well-organized ROS 2 projects.
+
+## Getting Help
+
+As you work through this chapter:
+
+- Run `ros2 pkg --help` for package creation help
+- Run `colcon build --help` for build system options
+- Check the [ROS 2 documentation](https://docs.ros.org) for detailed references
+- Use `ros2 launch --help` for launch system information
+
+## Let's Get Started!
+
+Ready to build real ROS 2 projects? Let's dive into package structure and workspaces!
+
+---
+
+**Next**: [4.1 Package Structure & Workspace →](./4.1-package-structure)

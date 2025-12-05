@@ -1,0 +1,135 @@
+# Chapter 5: Mini-Project - Walking Gait Publisher
+
+:::tip Estimated Time
+**60-70 minutes** total implementation time
+
+This is your Module 1 capstone project! You'll integrate everything you've learned.
+:::
+
+## Welcome to Your First Real Humanoid Robotics Project!
+
+Congratulations on making it this far! You've learned ROS 2 concepts, mastered Python nodes, created robot descriptions with URDF, and built packages. Now it's time to put it all together and build something genuinely exciting: **a walking gait publisher for a humanoid robot**.
+
+By the end of this chapter, you'll have a working ROS 2 system that generates walking trajectories for a humanoid robot and visualizes them in RViz. This is not a toy example—this is real robotics engineering that forms the foundation of how actual humanoid robots walk.
+
+## What You'll Build
+
+Your final project will consist of:
+
+1. **A custom ROS 2 package** (`gait_publisher`) with proper structure
+2. **A mathematical gait generator** that computes joint trajectories for walking
+3. **A ROS 2 publisher node** that sends joint commands at real-time rates
+4. **A complete visualization system** showing your humanoid walking in RViz
+5. **Launch files** that bring everything together seamlessly
+
+Here's what your robot will do:
+- Generate coordinated hip, knee, and ankle movements
+- Publish joint states at 50 Hz (real-time control frequency)
+- Maintain proper stance and swing phases
+- Demonstrate realistic walking motion in simulation
+
+## Prerequisites
+
+Before starting this project, make sure you've completed:
+
+- ✅ **Chapter 1**: Core ROS 2 concepts (nodes, topics, messages)
+- ✅ **Chapter 2**: Python and rclpy programming
+- ✅ **Chapter 3**: URDF and robot modeling
+- ✅ **Chapter 4**: Package creation and management
+
+You should be comfortable with:
+- Creating and running ROS 2 nodes
+- Publishing and subscribing to topics
+- Reading and modifying URDF files
+- Using colcon to build packages
+- Launching nodes with launch files
+
+## Learning Objectives
+
+By completing this project, you will:
+
+1. **Integrate multiple ROS 2 concepts** into a cohesive system
+2. **Understand humanoid gait mechanics** and trajectory generation
+3. **Implement real-time control loops** using ROS 2 timers
+4. **Visualize robot motion** using RViz and robot_state_publisher
+5. **Debug complex multi-node systems** effectively
+6. **Build production-quality code** with proper structure and documentation
+
+## Project Structure Overview
+
+This chapter is divided into four phases:
+
+### Phase 1: Project Setup (15 minutes)
+Set up your package structure, dependencies, and initial files. Create the foundation for your walking gait system.
+
+**What you'll do**: Create the `gait_publisher` package, set up directory structure, and prepare placeholder files.
+
+### Phase 2: Gait Mathematics (20 minutes)
+Implement the mathematical foundation for walking. Learn how joint trajectories create coordinated walking motion.
+
+**What you'll do**: Build a `GaitGenerator` class that computes sinusoidal trajectories for hip, knee, and ankle joints.
+
+### Phase 3: Publisher Node (15 minutes)
+Create the ROS 2 node that publishes your gait trajectories as joint commands at real-time rates.
+
+**What you'll do**: Integrate your gait generator with ROS 2, publish `JointState` messages, and create launch files.
+
+### Phase 4: Visualization & Testing (15 minutes)
+Bring your robot to life in RViz! See your humanoid walk and debug any issues.
+
+**What you'll do**: Configure RViz, launch the complete system, test walking motion, and celebrate your success!
+
+## Project Goals
+
+### Primary Goals
+- ✅ Generate walking gait trajectories for a bipedal humanoid
+- ✅ Publish joint commands at control frequency (50 Hz)
+- ✅ Visualize robot motion in RViz with correct joint movements
+- ✅ Demonstrate understanding of ROS 2 ecosystem integration
+
+### Stretch Goals (Optional)
+- 🌟 Add parameter-based gait tuning (step height, stride length, frequency)
+- 🌟 Implement different gait patterns (fast walk, slow walk, march)
+- 🌟 Add CoM (Center of Mass) trajectory visualization
+- 🌟 Create a service to start/stop walking on command
+
+## What Makes This Project Special
+
+This isn't just another tutorial—this is **real robotics work**:
+
+- The mathematics you'll implement is used in actual humanoid robots
+- The control frequency (50 Hz) matches real hardware requirements
+- The ROS 2 patterns you'll use are industry-standard practices
+- The debugging skills you'll develop translate directly to professional work
+
+## Deliverables
+
+When you complete this project, you'll have:
+
+1. A well-structured ROS 2 package with clear organization
+2. Python code implementing gait mathematics
+3. A working publisher node with proper ROS 2 integration
+4. Launch files for easy system startup
+5. A visualized walking humanoid in RViz
+6. Documentation of your implementation choices
+
+## Getting Started
+
+Ready to build your walking robot? Let's start with **Phase 1: Project Setup**!
+
+:::info Your Learning Journey
+This project marks the completion of **Module 1: ROS 2 Foundations**. Take your time, experiment freely, and don't hesitate to revisit previous chapters if you need a refresher. You've got this!
+:::
+
+---
+
+## Navigation
+
+**Next**: [5.1 Project Setup & Package Creation](./5.1-project-setup.mdx) →
+
+**Module 1 Chapters**:
+- [Chapter 1: Core Concepts](../chapter1-core-concepts/index.mdx)
+- [Chapter 2: Python Programming](../chapter2-python-rclpy/index.mdx)
+- [Chapter 3: URDF and Robot Modeling](../chapter3-urdf-xacro/index.mdx)
+- [Chapter 4: Packages and Workspaces](../chapter4-packages/index.mdx)
+- **Chapter 5: Mini-Project** (You are here)

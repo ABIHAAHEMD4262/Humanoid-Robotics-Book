@@ -1,0 +1,429 @@
+# 4.1 Package Structure & Workspace
+
+*Estimated reading time: 10 minutes*
+
+Think of a ROS 2 package as a folder that contains all the code, configuration files, and resources for a specific piece of functionality. Just like you wouldn't throw all your files onto your desktop, you wouldn't throw all your ROS 2 code into one giant file. Packages help you organize and modularize your robotics projects.
+
+## What is a ROS 2 Package?
+
+A **package** is the fundamental unit of organization in ROS 2. It's a directory that contains:
+
+- **Nodes**: Your executable programs
+- **Launch files**: Scripts to start multiple nodes
+- **Configuration files**: Parameters and settings
+- **Message/Service definitions**: Custom data types
+- **Documentation**: README files and guides
+
+Each package should have a single, well-defined purpose. For example:
+
+- `robot_sensors`: Code for all sensor drivers
+- `robot_navigation`: Navigation algorithms
+- `robot_description`: URDF models and meshes
+- `robot_control`: Motor controllers
+
+## Understanding Workspaces
+
+Before diving into packages, let's understand the **workspace**—the top-level folder that contains your packages.
+
+### Workspace Structure
+
+A typical ROS 2 workspace looks like this:
+
+```
+my_robot_ws/              # Workspace root
+├── src/                  # Source space (your packages go here)
+│   ├── package1/
+│   ├── package2/
+│   └── package3/
+├── build/                # Build space (temporary build files)
+├── install/              # Install space (compiled packages)
+└── log/                  # Log files from builds
+```
+
+**Key Directories**:
+
+- **src/**: Where you create and edit your packages (the only directory you commit to git)
+- **build/**: Contains intermediate build files (auto-generated, ignored by git)
+- **install/**: Contains the final compiled packages ready to use (auto-generated)
+- **log/**: Build logs for debugging (auto-generated)
+
+:::tip
+Only the `src/` directory should be tracked in version control. Add `build/`, `install/`, and `log/` to your `.gitignore` file.
+:::
+
+### Creating a Workspace
+
+Here's how to create a new workspace:
+
+```bash
+# Create workspace directory
+mkdir -p ~/my_robot_ws/src
+cd ~/my_robot_ws/src
+
+# Initialize the workspace (optional but good practice)
+cd ~/my_robot_ws
+colcon build  # Creates build, install, and log directories
+
+# Source the workspace
+source install/setup.bash
+```
+
+## Anatomy of a ROS 2 Package
+
+Let's explore what's inside a typical Python package:
+
+```
+my_robot_package/
+├── package.xml           # Package metadata and dependencies
+├── setup.py              # Python installation configuration
+├── setup.cfg             # Python package configuration
+├── resource/             # Package resource marker
+│   └── my_robot_package
+├── my_robot_package/     # Python module directory
+│   ├── __init__.py
+│   ├── node1.py
+│   └── node2.py
+└── test/                 # Unit tests
+    ├── test_node1.py
+    └── test_node2.py
+```
+
+### Key Files Explained
+
+#### 1. package.xml
+
+This XML file contains metadata about your package:
+
+```xml
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>my_robot_package</name>
+  <version>0.0.1</version>
+  <description>A sample robot package</description>
+  <maintainer email="you@example.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Build tool dependency -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Package dependencies -->
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+
+  <!-- Test dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+```
+
+**Important fields**:
+- `<name>`: Package name (must match directory name)
+- `<version>`: Semantic version (major.minor.patch)
+- `<description>`: Brief explanation of what the package does
+- `<maintainer>`: Who maintains this package
+- `<license>`: Software license (Apache-2.0, MIT, BSD, etc.)
+- `<depend>`: Package dependencies (more in section 4.2)
+
+#### 2. setup.py
+
+For Python packages, this file configures the Python installation:
+
+```python
+from setuptools import setup
+
+package_name = 'my_robot_package'
+
+setup(
+    name=package_name,
+    version='0.0.1',
+    packages=[package_name],
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='Your Name',
+    maintainer_email='you@example.com',
+    description='A sample robot package',
+    license='Apache-2.0',
+    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'my_node = my_robot_package.node1:main',
+        ],
+    },
+)
+```
+
+**Key section**: `entry_points` defines executable nodes:
+- Left side: Command name you'll use (`ros2 run my_robot_package my_node`)
+- Right side: Python module path and function (`my_robot_package.node1:main`)
+
+#### 3. setup.cfg
+
+Simple configuration file for Python packages:
+
+```ini
+[develop]
+script_dir=$base/lib/my_robot_package
+[install]
+install_scripts=$base/lib/my_robot_package
+```
+
+This tells Python where to install executable scripts.
+
+## Creating Your First Package
+
+ROS 2 provides a convenient tool to create packages with the correct structure:
+
+### Python Package
+
+```bash
+cd ~/my_robot_ws/src
+ros2 pkg create --build-type ament_python my_robot_package \
+  --dependencies rclpy std_msgs
+```
+
+**Flags explained**:
+- `--build-type ament_python`: Create a Python package
+- `--dependencies`: List of packages this package depends on
+
+### C++ Package
+
+```bash
+ros2 pkg create --build-type ament_cmake my_cpp_package \
+  --dependencies rclcpp std_msgs
+```
+
+**Difference**: C++ packages use `ament_cmake` and have a `CMakeLists.txt` instead of `setup.py`.
+
+### What Gets Created?
+
+After running the command, you'll see:
+
+```
+Creating my_robot_package...
+going to create a new package
+package name: my_robot_package
+destination directory: /home/user/my_robot_ws/src
+package format: 3
+version: 0.0.0
+description: TODO: Package description
+maintainer: ['user <user@todo.todo>']
+licenses: ['TODO: License declaration']
+build type: ament_python
+dependencies: ['rclpy', 'std_msgs']
+```
+
+:::warning
+Don't forget to update the TODO fields in `package.xml` with real information!
+:::
+
+## Package Types Comparison
+
+| Feature | Python Package | C++ Package | Hybrid Package |
+|---------|---------------|-------------|----------------|
+| Build Type | `ament_python` | `ament_cmake` | `ament_cmake` |
+| Build File | `setup.py` | `CMakeLists.txt` | Both |
+| Speed | Slower | Faster | Mixed |
+| Compilation | No | Yes | Yes (C++ only) |
+| Ease of Use | Easier | More complex | Most flexible |
+| Use Case | Prototyping, high-level logic | Performance-critical, drivers | Large projects |
+
+### When to Use Each:
+
+**Python Package**:
+- Rapid prototyping
+- High-level decision making
+- Not performance-critical
+- Easier to debug and modify
+
+**C++ Package**:
+- Real-time control loops
+- Image/sensor processing
+- Hardware drivers
+- Performance-critical code
+
+**Hybrid Package**:
+- Large projects with both high-level and low-level code
+- When you need both Python and C++ in the same package
+
+## Adding a Node to Your Package
+
+Let's add a simple publisher node to our package:
+
+```python
+# my_robot_package/publisher_node.py
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class PublisherNode(Node):
+    def __init__(self):
+        super().__init__('publisher_node')
+        self.publisher = self.create_publisher(String, 'chatter', 10)
+        self.timer = self.create_timer(1.0, self.timer_callback)
+        self.counter = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = f'Hello ROS 2: {self.counter}'
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Publishing: "{msg.data}"')
+        self.counter += 1
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = PublisherNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+Now register it in `setup.py`:
+
+```python
+entry_points={
+    'console_scripts': [
+        'publisher_node = my_robot_package.publisher_node:main',
+    ],
+},
+```
+
+Build and run:
+
+```bash
+cd ~/my_robot_ws
+colcon build --packages-select my_robot_package
+source install/setup.bash
+ros2 run my_robot_package publisher_node
+```
+
+## Best Practices
+
+### 1. Package Naming
+- Use lowercase with underscores: `my_robot_sensors`
+- Be descriptive but concise
+- Avoid generic names like `utils` or `helpers`
+
+### 2. Package Scope
+- One clear purpose per package
+- Keep packages focused and modular
+- Split large packages into smaller ones
+
+### 3. File Organization
+```
+my_robot_package/
+├── my_robot_package/
+│   ├── sensors/          # Group related nodes
+│   │   ├── camera.py
+│   │   └── lidar.py
+│   ├── control/
+│   │   └── motor_control.py
+│   └── utils/            # Helper functions
+│       └── math_utils.py
+```
+
+### 4. Documentation
+Always include a `README.md` in your package:
+
+```markdown
+# My Robot Package
+
+## Overview
+Brief description of what this package does.
+
+## Nodes
+- `publisher_node`: Publishes messages to the chatter topic
+
+## Topics
+- `/chatter` (std_msgs/String): Chat messages
+
+## Usage
+\`\`\`bash
+ros2 run my_robot_package publisher_node
+\`\`\`
+```
+
+## Common Mistakes
+
+### Mistake 1: Package Name Mismatch
+```bash
+# Directory name: my_package
+# package.xml name: my_robot_package  ❌ WRONG!
+```
+**Solution**: Directory name and `<name>` in package.xml must match exactly.
+
+### Mistake 2: Forgetting to Source
+```bash
+colcon build
+ros2 run my_package my_node  # ❌ Package not found!
+```
+**Solution**: Always source after building:
+```bash
+source install/setup.bash
+```
+
+### Mistake 3: Wrong Build Type
+Using `ament_python` for a C++ package or vice versa.
+
+**Solution**: Match build type to your code language.
+
+## Try It Yourself
+
+### Exercise 1: Create a Multi-Node Package
+Create a package with both a publisher and subscriber:
+
+1. Create package: `ros2 pkg create --build-type ament_python chat_system --dependencies rclpy std_msgs`
+2. Add a publisher node (sends messages)
+3. Add a subscriber node (receives messages)
+4. Register both in setup.py
+5. Build and test
+
+### Exercise 2: Organize a Complex Package
+Create a package with this structure:
+```
+sensor_package/
+├── sensor_package/
+│   ├── drivers/
+│   │   ├── camera_driver.py
+│   │   └── lidar_driver.py
+│   └── processors/
+│       └── data_processor.py
+```
+
+Implement at least one working node in each subdirectory.
+
+## Summary
+
+In this section, you learned:
+
+- ROS 2 packages are the fundamental units of organization
+- Workspaces contain packages in the `src/` directory
+- `package.xml` defines package metadata and dependencies
+- `setup.py` configures Python package installation
+- Use `ros2 pkg create` to generate package structure
+- Python and C++ packages have different build systems
+- Proper package organization improves maintainability
+
+## Next Steps
+
+Now that you understand package structure, let's learn how to manage dependencies between packages in [4.2 Dependencies & package.xml →](./4.2-dependencies)
+
+---
+
+**Navigation**
+
+- [← Back to Chapter 4 Overview](./index)
+- [Next: 4.2 Dependencies & package.xml →](./4.2-dependencies)

@@ -1,0 +1,604 @@
+# 3.4 Inertial Properties & Physics
+
+**Estimated Reading Time**: 10 minutes
+**Prerequisites**: 3.1-3.3 (all previous Chapter 3 subtopics)
+**Difficulty**: Intermediate
+
+## Introduction
+
+Visual and collision geometry define appearance and boundaries. **Inertial properties** define how robots behave in physics simulation.
+
+Every link needs:
+- **Mass**: How heavy it is
+- **Center of Mass**: Balance point
+- **Inertia Tensor**: Resistance to rotation
+
+Without proper inertial properties, robots behave unrealistically in Gazebo or Isaac Sim.
+
+## Why Inertial Properties Matter
+
+**Without inertia**: Robot parts float, spin
+
+ wildly, ignore gravity
+**With inertia**: Realistic movement, stable simulation, accurate dynamics
+
+Physics engines (Gazebo, Isaac Sim) use inertial properties to calculate:
+- Gravity effects
+- Collision responses
+- Joint torques
+- Balance and stability
+
+## The Inertial Tag
+
+```xml
+<link name="my_link">
+  <inertial>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <mass value="1.0"/>
+    <inertia ixx="0.01" ixy="0" ixz="0"
+             iyy="0.01" iyz="0"
+             izz="0.01"/>
+  </inertial>
+
+  <!-- Visual and collision also defined -->
+</link>
+```
+
+**Components**:
+- `<origin>`: Center of mass location relative to link frame
+- `<mass>`: Total mass in kilograms
+- `<inertia>`: 3×3 inertia tensor (moment of inertia)
+
+## Mass
+
+Mass is straightforward: total weight in kg.
+
+### Typical Masses
+
+| Robot Part | Typical Mass (kg) |
+|------------|-------------------|
+| Humanoid torso | 5-15 |
+| Humanoid thigh | 2-4 |
+| Humanoid shin | 1-2 |
+| Humanoid foot | 0.3-0.8 |
+| Humanoid head | 1-3 |
+| Arm upper | 1-2 |
+| Arm lower | 0.5-1 |
+| Hand | 0.2-0.5 |
+
+### Mass Example
+
+```xml
+<link name="thigh">
+  <inertial>
+    <mass value="2.5"/>
+    ...
+  </inertial>
+</link>
+```
+
+## Center of Mass (COM)
+
+The center of mass is the balance point. For symmetric shapes, it's usually at the geometric center.
+
+### Simple Shapes
+
+```xml
+<!-- Cylinder centered at origin -->
+<link name="leg_segment">
+  <visual>
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.05" length="0.4"/>
+    </geometry>
+  </visual>
+
+  <inertial>
+    <!-- COM at center of cylinder -->
+    <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+    <mass value="1.5"/>
+    ...
+  </inertial>
+</link>
+```
+
+COM should match the visual geometry center.
+
+### Asymmetric Shapes
+
+For complex meshes or asymmetric parts, COM may not be at the origin.
+
+```xml
+<link name="foot">
+  <visual>
+    <origin xyz="0.05 0 0" rpy="0 0 0"/>
+    <geometry>
+      <box size="0.2 0.1 0.05"/>
+    </geometry>
+  </visual>
+
+  <inertial>
+    <!-- COM slightly forward due to foot shape -->
+    <origin xyz="0.06 0 -0.01" rpy="0 0 0"/>
+    <mass value="0.5"/>
+    ...
+  </inertial>
+</link>
+```
+
+## Inertia Tensor
+
+The inertia tensor describes resistance to rotation. It's a 3×3 symmetric matrix:
+
+```
+⎡ Ixx  Ixy  Ixz ⎤
+⎢ Ixy  Iyy  Iyz ⎥
+⎣ Ixz  Iyz  Izz ⎦
+```
+
+In URDF:
+```xml
+<inertia ixx="value" ixy="value" ixz="value"
+         iyy="value" iyz="value"
+         izz="value"/>
+```
+
+### Diagonal Terms (Main Moments)
+
+- **Ixx**: Resistance to rotation around X-axis
+- **Iyy**: Resistance to rotation around Y-axis
+- **Izz**: Resistance to rotation around Z-axis
+
+Larger values = harder to rotate
+
+### Off-Diagonal Terms (Products)
+
+- **Ixy, Ixz, Iyz**: Coupling between axes
+
+For symmetric shapes aligned with axes, these are usually **0**.
+
+## Calculating Inertia
+
+### Method 1: Standard Formulas
+
+For simple shapes, use physics formulas:
+
+#### Solid Cylinder (around center)
+
+```
+Ixx = Iyy = (1/12) * m * (3*r² + h²)
+Izz = (1/2) * m * r²
+```
+
+Where:
+- `m` = mass
+- `r` = radius
+- `h` = height (length)
+
+**Example**: Leg segment (cylinder)
+- Mass: 1.5 kg
+- Radius: 0.05 m
+- Length: 0.4 m
+
+```python
+m = 1.5
+r = 0.05
+h = 0.4
+
+Ixx = Iyy = (1/12) * m * (3*r**2 + h**2)
+         = (1/12) * 1.5 * (3*0.0025 + 0.16)
+         = 0.0209 kg⋅m²
+
+Izz = (1/2) * m * r**2
+    = (1/2) * 1.5 * 0.0025
+    = 0.0019 kg⋅m²
+```
+
+```xml
+<inertial>
+  <mass value="1.5"/>
+  <inertia ixx="0.0209" ixy="0" ixz="0"
+           iyy="0.0209" iyz="0"
+           izz="0.0019"/>
+</inertial>
+```
+
+#### Solid Box (around center)
+
+```
+Ixx = (1/12) * m * (h² + d²)
+Iyy = (1/12) * m * (w² + d²)
+Izz = (1/12) * m * (w² + h²)
+```
+
+Where:
+- `w` = width (x)
+- `h` = height (y)
+- `d` = depth (z)
+
+**Example**: Torso (box)
+- Mass: 10 kg
+- Size: 0.3 × 0.5 × 0.6 m
+
+```python
+m = 10
+w = 0.3
+h = 0.5
+d = 0.6
+
+Ixx = (1/12) * m * (h**2 + d**2)
+    = (1/12) * 10 * (0.25 + 0.36)
+    = 0.508 kg⋅m²
+
+Iyy = (1/12) * m * (w**2 + d**2)
+    = (1/12) * 10 * (0.09 + 0.36)
+    = 0.375 kg⋅m²
+
+Izz = (1/12) * m * (w**2 + h**2)
+    = (1/12) * 10 * (0.09 + 0.25)
+    = 0.283 kg⋅m²
+```
+
+```xml
+<inertial>
+  <mass value="10"/>
+  <inertia ixx="0.508" ixy="0" ixz="0"
+           iyy="0.375" iyz="0"
+           izz="0.283"/>
+</inertial>
+```
+
+#### Solid Sphere
+
+```
+Ixx = Iyy = Izz = (2/5) * m * r²
+```
+
+**Example**: Head (sphere)
+- Mass: 2 kg
+- Radius: 0.1 m
+
+```python
+m = 2
+r = 0.1
+
+I = (2/5) * m * r**2
+  = (2/5) * 2 * 0.01
+  = 0.008 kg⋅m²
+```
+
+```xml
+<inertial>
+  <mass value="2"/>
+  <inertia ixx="0.008" ixy="0" ixz="0"
+           iyy="0.008" iyz="0"
+           izz="0.008"/>
+</inertial>
+```
+
+### Method 2: CAD Software
+
+Most CAD tools calculate inertial properties automatically:
+
+1. **SolidWorks**: Tools → Mass Properties
+2. **Fusion 360**: Inspect → Physical Properties
+3. **FreeCAD**: View → Measure → Mass Properties
+
+Export values and use in URDF.
+
+### Method 3: MeshLab / sw_urdf_exporter
+
+For complex meshes:
+1. Import mesh in MeshLab
+2. Filters → Quality Measure → Compute Geometric Measures
+3. Use mass and inertia values
+
+Or use SolidWorks URDF exporter plugin.
+
+## Xacro Macro for Inertial Properties
+
+Create reusable inertia calculators:
+
+```xml title="inertial_macros.xacro"
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Box inertia -->
+  <xacro:macro name="box_inertial" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass * (y*y + z*z) / 12.0}" ixy="0" ixz="0"
+               iyy="${mass * (x*x + z*z) / 12.0}" iyz="0"
+               izz="${mass * (x*x + y*y) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Cylinder inertia (aligned with Z-axis) -->
+  <xacro:macro name="cylinder_inertial" params="mass r h">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass * (3*r*r + h*h) / 12.0}" ixy="0" ixz="0"
+               iyy="${mass * (3*r*r + h*h) / 12.0}" iyz="0"
+               izz="${mass * r*r / 2.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Sphere inertia -->
+  <xacro:macro name="sphere_inertial" params="mass r">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${2.0 * mass * r*r / 5.0}" ixy="0" ixz="0"
+               iyy="${2.0 * mass * r*r / 5.0}" iyz="0"
+               izz="${2.0 * mass * r*r / 5.0}"/>
+    </inertial>
+  </xacro:macro>
+
+</robot>
+```
+
+**Usage**:
+```xml
+<xacro:include filename="inertial_macros.xacro"/>
+
+<link name="torso">
+  <visual>
+    <geometry>
+      <box size="0.3 0.5 0.6"/>
+    </geometry>
+  </visual>
+
+  <!-- Use macro -->
+  <xacro:box_inertial mass="10" x="0.3" y="0.5" z="0.6"/>
+</link>
+
+<link name="thigh">
+  <visual>
+    <geometry>
+      <cylinder radius="0.05" length="0.4"/>
+    </geometry>
+  </visual>
+
+  <!-- Use macro -->
+  <xacro:cylinder_inertial mass="2.5" r="0.05" h="0.4"/>
+</link>
+```
+
+## Complete Link Example
+
+```xml
+<link name="upper_arm">
+  <!-- Visual -->
+  <visual>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.04" length="0.3"/>
+    </geometry>
+    <material name="gray">
+      <color rgba="0.7 0.7 0.7 1"/>
+    </material>
+  </visual>
+
+  <!-- Collision -->
+  <collision>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <geometry>
+      <cylinder radius="0.04" length="0.3"/>
+    </geometry>
+  </collision>
+
+  <!-- Inertial -->
+  <inertial>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+    <mass value="1.2"/>
+    <inertia ixx="0.0091" ixy="0" ixz="0"
+             iyy="0.0091" iyz="0"
+             izz="0.00096"/>
+  </inertial>
+</link>
+```
+
+All three (visual, collision, inertial) have the same origin (cylinder center).
+
+## Validation and Testing
+
+### Check Inertia is Valid
+
+Inertia tensor must be positive definite. Simple check:
+
+```
+Ixx > 0
+Iyy > 0
+Izz > 0
+Ixx + Iyy >= Izz
+Iyy + Izz >= Ixx
+Izz + Ixx >= Iyy
+```
+
+### Test in Gazebo
+
+1. Spawn robot in Gazebo
+2. Check for warnings:
+   ```
+   Warning: Inertia matrix is not positive definite
+   ```
+3. If stable, inertia is reasonable
+
+### Gravity Test
+
+Drop robot from height in simulation. It should:
+- Fall realistically
+- Not rotate wildly
+- Collide and stop
+
+If behavior is wrong, check:
+- Mass too small/large
+- COM offset incorrectly
+- Inertia values unrealistic
+
+## Common Mistakes
+
+### Mistake 1: Zero Inertia
+
+```xml
+<!-- Wrong - causes simulation errors -->
+<inertial>
+  <mass value="1.0"/>
+  <inertia ixx="0" ixy="0" ixz="0"
+           iyy="0" iyz="0"
+           izz="0"/>
+</inertial>
+```
+
+Even small links need non-zero inertia. Use small values:
+```xml
+<inertia ixx="0.001" ixy="0" ixz="0"
+         iyy="0.001" iyz="0"
+         izz="0.001"/>
+```
+
+### Mistake 2: Huge Mass/Inertia
+
+```xml
+<!-- Wrong - unrealistic -->
+<mass value="1000"/>  <!-- 1 ton for a robot arm? -->
+```
+
+Use realistic values based on real robot specifications.
+
+### Mistake 3: Inconsistent Origins
+
+```xml
+<!-- Wrong - COM doesn't match geometry -->
+<visual>
+  <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+  <geometry>
+    <cylinder radius="0.05" length="0.4"/>
+  </geometry>
+</visual>
+
+<inertial>
+  <origin xyz="0 0 0" rpy="0 0 0"/>  <!-- Wrong origin -->
+  <mass value="1.5"/>
+  ...
+</inertial>
+```
+
+COM should be at cylinder center:
+```xml
+<inertial>
+  <origin xyz="0 0 -0.2" rpy="0 0 0"/>  <!-- Correct -->
+  ...
+</inertial>
+```
+
+### Mistake 4: Forgetting Small Links
+
+```xml
+<!-- Wrong - sensor link with no inertia -->
+<link name="camera">
+  <visual>...</visual>
+  <!-- Missing inertial! -->
+</link>
+```
+
+Even small sensor links need minimal inertia:
+```xml
+<link name="camera">
+  <visual>...</visual>
+  <inertial>
+    <mass value="0.1"/>
+    <inertia ixx="0.0001" ixy="0" ixz="0"
+             iyy="0.0001" iyz="0"
+             izz="0.0001"/>
+  </inertial>
+</link>
+```
+
+## Best Practices
+
+### 1. Start with Realistic Masses
+
+Research similar robots or use CAD mass properties.
+
+### 2. Use Macros for Standard Shapes
+
+Don't recalculate inertia manually. Use Xacro macros.
+
+### 3. COM Matches Geometry Center
+
+For symmetric shapes, COM should be at visual geometry center.
+
+### 4. Test in Simulation
+
+Always validate robot behavior in Gazebo before deployment.
+
+### 5. Document Assumptions
+
+```xml
+<!-- Thigh: solid aluminum cylinder, 2.5 kg
+     Dimensions: r=0.05m, h=0.4m
+     Inertia calculated using standard formula -->
+<link name="thigh">
+  <xacro:cylinder_inertial mass="2.5" r="0.05" h="0.4"/>
+  ...
+</link>
+```
+
+## Tools for Inertial Properties
+
+### URDF Inertia Calculator (Python)
+
+```python
+import numpy as np
+
+def box_inertia(mass, x, y, z):
+    return {
+        'ixx': mass * (y**2 + z**2) / 12.0,
+        'iyy': mass * (x**2 + z**2) / 12.0,
+        'izz': mass * (x**2 + y**2) / 12.0,
+    }
+
+def cylinder_inertia(mass, r, h):
+    return {
+        'ixx': mass * (3*r**2 + h**2) / 12.0,
+        'iyy': mass * (3*r**2 + h**2) / 12.0,
+        'izz': mass * r**2 / 2.0,
+    }
+
+# Example usage
+torso = box_inertia(10, 0.3, 0.5, 0.6)
+print(f"Torso inertia: {torso}")
+```
+
+### SolidWorks URDF Exporter
+
+Plugin that exports URDF with accurate inertial properties from CAD models.
+
+## Summary
+
+- **Inertial properties** enable realistic physics simulation
+- Every link needs: **mass**, **center of mass**, **inertia tensor**
+- **Mass**: Total weight in kg
+- **COM**: Balance point (often at geometry center)
+- **Inertia**: 3×3 tensor (resistance to rotation)
+- Diagonal terms (Ixx, Iyy, Izz) are main moments
+- Off-diagonal terms (Ixy, Ixz, Iyz) are usually 0 for symmetric shapes
+- Use **standard formulas** for simple shapes
+- Use **CAD software** for complex meshes
+- Create **Xacro macros** for reusable inertia calculations
+- **Validate** in Gazebo before deployment
+
+## Next Steps
+
+You've completed Chapter 3! Continue to [Chapter 4: ROS 2 Packages](../chapter4-packages/index.mdx) to learn how to organize URDF files and ROS 2 code into packages.
+
+**Related topics**:
+- [3.1 URDF Basics](./3.1-urdf-basics.mdx)
+- [3.2 Visual & Collision Geometry](./3.2-visual-collision.mdx)
+- [3.3 Xacro Macros](./3.3-xacro-macros.mdx)
+- [Chapter 3 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Calculate inertia for a box, cylinder, and sphere manually
+2. Create Xacro macros for standard inertial calculations
+3. Add inertial properties to your robot URDF
+4. Test robot behavior in Gazebo and verify stability
