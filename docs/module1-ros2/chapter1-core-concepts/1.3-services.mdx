@@ -1,0 +1,354 @@
+# 1.3 Services - Request-Response
+
+**Estimated Reading Time**: 7 minutes
+**Prerequisites**: 1.1 Nodes, 1.2 Topics
+**Difficulty**: Beginner
+
+## Introduction
+
+Services are for one-time requests that need a reply. Think "what's your battery level?" or "add these two numbers."
+
+Services use synchronous request-response. The client sends a request. The server processes it. The client waits. The server sends a response.
+
+## How Services Work
+
+**Service Server** waits for requests. When one arrives, it processes it. Then it sends a response.
+
+**Service Client** sends a request. It waits for the response.
+
+Unlike topics, services are synchronous. The client must wait for the answer.
+
+### The Restaurant Bill Analogy
+
+**Type**: Analogy
+
+**Context**: You finish eating at a restaurant. You need to pay.
+
+**Explanation**: You ask the waiter for the bill. This is your request. The waiter goes to the cashier. The cashier calculates your total. This takes time. You wait. The waiter returns with the bill. This is the response. You needed an answer. You got it.
+
+**Takeaway**: Services provide request-response communication. Clients get answers.
+
+## When to Use Services
+
+Use services for:
+- Queries (get current state)
+- Commands that complete quickly (turn on LED)
+- Calculations (inverse kinematics)
+
+**Don't use services for**:
+- Long-running tasks (use actions instead)
+- Continuous data streams (use topics instead)
+
+**Rule of thumb**: If it takes more than 1 second, use an action. Not a service.
+
+## Service Server Example
+
+Here's a service that adds two integers:
+
+```python title="add_two_ints_server.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from example_interfaces.srv import AddTwoInts
+
+class AddTwoIntsServer(Node):
+    def __init__(self):
+        super().__init__('add_two_ints_server')
+
+        # Create service
+        self.srv = self.create_service(
+            AddTwoInts,
+            'add_two_ints',
+            self.add_two_ints_callback
+        )
+
+        self.get_logger().info('Add Two Ints Server ready')
+
+    def add_two_ints_callback(self, request, response):
+        response.sum = request.a + request.b
+        self.get_logger().info(f'Request: {request.a} + {request.b} = {response.sum}')
+        return response
+
+def main():
+    rclpy.init()
+    node = AddTwoIntsServer()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Server Code Breakdown
+
+**Key lines**:
+
+1. `from example_interfaces.srv import AddTwoInts` - Import service type
+   - Service types end in `.srv`
+   - Located in service packages
+
+2. `self.create_service(...)` - Create a service server
+   - `AddTwoInts`: Service type
+   - `'add_two_ints'`: Service name
+   - `self.add_two_ints_callback`: Handler function
+
+3. `def add_two_ints_callback(self, request, response)` - Service callback
+   - `request`: Contains client's request data
+   - `response`: Object to fill with response data
+   - Must return `response`
+
+4. `response.sum = request.a + request.b` - Process the request
+   - Access request fields: `request.a`, `request.b`
+   - Set response fields: `response.sum`
+
+## Service Client Example
+
+Here's a client that calls the service:
+
+```python title="add_two_ints_client.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from example_interfaces.srv import AddTwoInts
+
+class AddTwoIntsClient(Node):
+    def __init__(self):
+        super().__init__('add_two_ints_client')
+
+        # Create client
+        self.client = self.create_client(AddTwoInts, 'add_two_ints')
+
+        # Wait for service to be available
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for service...')
+
+        self.get_logger().info('Service available')
+
+    def send_request(self, a, b):
+        request = AddTwoInts.Request()
+        request.a = a
+        request.b = b
+
+        # Send request
+        future = self.client.call_async(request)
+        return future
+
+def main():
+    rclpy.init()
+    node = AddTwoIntsClient()
+
+    # Send request
+    future = node.send_request(5, 7)
+
+    # Wait for response
+    rclpy.spin_until_future_complete(node, future)
+
+    if future.result() is not None:
+        result = future.result()
+        node.get_logger().info(f'Result: {result.sum}')
+    else:
+        node.get_logger().error('Service call failed')
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Client Code Breakdown
+
+**Key lines**:
+
+1. `self.create_client(AddTwoInts, 'add_two_ints')` - Create a client
+   - Service type and name must match server
+
+2. `self.client.wait_for_service(timeout_sec=1.0)` - Wait for server
+   - Returns `True` when server is available
+   - Timeout prevents infinite waiting
+
+3. `request = AddTwoInts.Request()` - Create request object
+   - Set request fields: `request.a`, `request.b`
+
+4. `future = self.client.call_async(request)` - Call service asynchronously
+   - Returns a `Future` object
+   - Non-blocking call
+
+5. `rclpy.spin_until_future_complete(node, future)` - Wait for response
+   - Blocks until service returns
+
+6. `future.result()` - Get the response
+   - Contains server's response data
+
+## Running Server and Client
+
+**Terminal 1** - Start the server:
+```bash
+python3 add_two_ints_server.py
+```
+
+Output:
+```
+[INFO] [add_two_ints_server]: Add Two Ints Server ready
+```
+
+**Terminal 2** - Run the client:
+```bash
+python3 add_two_ints_client.py
+```
+
+Output:
+```
+[INFO] [add_two_ints_client]: Service available
+[INFO] [add_two_ints_client]: Result: 12
+```
+
+Server output:
+```
+[INFO] [add_two_ints_server]: Request: 5 + 7 = 12
+```
+
+They communicate! The client requests. The server responds.
+
+## Checking Services
+
+List all available services:
+```bash
+ros2 service list
+```
+
+See service details:
+```bash
+ros2 service type /add_two_ints
+```
+
+Call a service from command line:
+```bash
+ros2 service call /add_two_ints example_interfaces/srv/AddTwoInts "{a: 3, b: 4}"
+```
+
+Output:
+```
+sum: 7
+```
+
+## Service Types
+
+Services have defined types with request and response structures.
+
+Common service types:
+- `example_interfaces/srv/AddTwoInts` - Add two integers
+- `std_srvs/srv/SetBool` - Set a boolean value
+- `std_srvs/srv/Trigger` - Trigger an action
+
+View service type definition:
+```bash
+ros2 interface show example_interfaces/srv/AddTwoInts
+```
+
+Output shows request and response fields:
+```
+int64 a
+int64 b
+---
+int64 sum
+```
+
+The `---` separates request (above) from response (below).
+
+## Synchronous vs Asynchronous Calls
+
+**Synchronous** (blocking):
+```python
+# Not shown in examples - blocks the entire node
+response = client.call(request)  # Waits here
+```
+
+This blocks everything. Don't use in production.
+
+**Asynchronous** (non-blocking):
+```python
+# Our example uses this
+future = client.call_async(request)  # Returns immediately
+rclpy.spin_until_future_complete(node, future)  # Wait separately
+response = future.result()
+```
+
+This allows other operations while waiting.
+
+## Common Mistakes
+
+### Mistake 1: Not Waiting for Service
+
+```python
+# Wrong - service might not exist yet
+client = self.create_client(AddTwoInts, 'add_two_ints')
+future = client.call_async(request)  # May fail!
+```
+
+Always wait:
+```python
+# Correct
+while not client.wait_for_service(timeout_sec=1.0):
+    self.get_logger().info('Waiting...')
+```
+
+### Mistake 2: Forgetting to Return Response
+
+```python
+# Wrong - doesn't return response
+def callback(self, request, response):
+    response.sum = request.a + request.b
+    # Missing: return response
+```
+
+Always return the response:
+```python
+# Correct
+def callback(self, request, response):
+    response.sum = request.a + request.b
+    return response
+```
+
+### Mistake 3: Using Services for Long Tasks
+
+```python
+# Bad - service blocks for 60 seconds
+def callback(self, request, response):
+    time.sleep(60)  # Don't do this!
+    return response
+```
+
+If it takes more than 1 second, use an action instead.
+
+## Summary
+
+- Services provide synchronous request-response communication
+- Service servers wait for requests and send responses
+- Service clients send requests and wait for responses
+- Use services for quick queries and commands (< 1 second)
+- Always wait for service availability before calling
+- Use asynchronous calls to avoid blocking
+
+## Next Steps
+
+You've learned services for request-response. Next, learn actions for long-running tasks.
+
+**Continue to**: [1.4 Actions - Long-Running Tasks](./1.4-actions.mdx)
+
+**Related topics**:
+- [1.1 Nodes](./1.1-nodes.mdx)
+- [1.2 Topics](./1.2-topics.mdx)
+
+**Try it yourself**:
+1. Create a service that squares a number
+2. Create a client that calls it
+3. Run both and verify the response
+4. Use `ros2 service call` from command line

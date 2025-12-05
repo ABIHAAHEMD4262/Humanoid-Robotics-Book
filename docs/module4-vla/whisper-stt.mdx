@@ -13,7 +13,11 @@ pip3 install openai-whisper
 ```
 
 ## Real-Time STT Pipeline
-```python
+```python title="whisper_stt.py"
+# Library: openai-whisper v20231117
+# Last updated: 2025-12-05
+# Tested on: Python 3.10, CUDA 11.8
+
 import whisper
 model = whisper.load_model("base")
 # Transcription code

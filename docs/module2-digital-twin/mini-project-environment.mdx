@@ -1,73 +1,536 @@
-# Mini-Project: Realistic Apartment Environment + Sensor Data Streaming
+# Mini-Project: Realistic Apartment Environment
 
-Build a complete simulation environment with a humanoid robot in a realistic apartment setting.
+**Estimated Time**: 90 minutes
+**Prerequisites**: Gazebo Setup, URDF/SDF
+**Difficulty**: Intermediate
 
-## Project Overview
+## Introduction
 
-Create a fully functional digital twin demonstrating:
-- Realistic apartment environment
-- Humanoid robot with full sensor suite
-- Real-time sensor data streaming to ROS 2
-- Interactive controls and visualization
+You've learned the pieces. Now put them together. Build a complete simulation. A humanoid robot. A realistic apartment.
 
-## Step 1: Environment Modeling
+This project combines everything. Environment modeling. Sensor integration. ROS 2 communication. By the end, you have a working digital twin.
 
-Create an apartment world file with:
-- Multiple rooms (living room, kitchen, bedroom)
+## What You'll Build
+
+Your project includes:
+- A realistic apartment with multiple rooms
 - Furniture and obstacles
-- Realistic lighting
-- Textured surfaces
+- A humanoid robot with sensors
+- Real-time sensor data streaming
+- ROS 2 visualization
 
-## Step 2: Robot Integration
+This is a real robotics project. You could expand it for research or development.
 
-Add your humanoid robot to the environment:
+### Example 1: Why Build a Digital Twin?
 
-```bash
-gz sim apartment_world.sdf
+**Type**: Scenario
+
+**Context**: You want to test a home service robot. Buying a robot costs $15,000. Breaking things costs more.
+
+**Explanation**: Build a digital twin first. Test in simulation. Find bugs. Fix problems. No risk. No cost. When it works, deploy to real hardware. Companies like Boston Dynamics do this. They test millions of scenarios. First in simulation. Then on real robots. This saves time. It saves money. It prevents accidents.
+
+**Takeaway**: Digital twins let you fail fast and cheap. Perfect your system before touching real hardware.
+
+## Project Structure
+
+Create this folder structure:
+
+```
+apartment_project/
+├── worlds/
+│   └── apartment.sdf
+├── models/
+│   ├── apartment/
+│   └── furniture/
+├── launch/
+│   └── apartment_sim.launch.py
+└── config/
+    └── rviz_config.rviz
 ```
 
-## Step 3: Sensor Data Streaming
+## Step 1: Create the Apartment World
 
-Configure sensors to publish to ROS 2 topics:
-- `/lidar` - LaserScan messages
-- `/camera/image_raw` - RGB images
-- `/camera/depth/image_raw` - Depth images
-- `/imu` - IMU data
-- `/joint_states` - Robot joint positions
+Start with a basic apartment layout.
 
-## Step 4: Visualization
+```xml title="worlds/apartment.sdf"
+<!-- Library: Gazebo Harmonic (osrf/gazebo latest)
+     Last updated: 2025-12-05
+     Tested on: Gazebo Harmonic, Ubuntu 22.04 -->
 
-Set up RViz2 for real-time visualization:
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <world name="apartment">
 
-```bash
-ros2 launch humanoid_viz apartment_sim.launch.py
+    <!-- Physics settings -->
+    <physics name="physics" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <!-- Lighting -->
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- Ground plane -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Living room wall -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>10 0.2 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>10 0.2 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Kitchen wall -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>10 0.2 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>10 0.2 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.9 0.9 0.9 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
 ```
 
-## Step 5: Testing
+This creates a basic room. Two walls. A floor. Lighting.
 
-Verify all systems:
-1. Robot spawns correctly
-2. All sensors publish data
-3. Navigation is possible
-4. Performance is acceptable
+### Add Furniture
 
-## Success Criteria
+Add a simple table:
 
-- ✓ Environment loads in under 30 seconds
-- ✓ All sensors stream data at expected rates
-- ✓ Robot can navigate through apartment
-- ✓ Simulation runs at real-time factor ≥ 0.8
+```xml
+<!-- Add this inside <world> tag -->
+<model name="table">
+  <static>true</static>
+  <pose>2 0 0.5 0 0 0</pose>
+  <link name="link">
+    <collision name="collision">
+      <geometry>
+        <box>
+          <size>1.2 0.8 0.05</size>
+        </box>
+      </geometry>
+    </collision>
+    <visual name="visual">
+      <geometry>
+        <box>
+          <size>1.2 0.8 0.05</size>
+        </box>
+      </geometry>
+      <material>
+        <ambient>0.6 0.4 0.2 1</ambient>
+        <diffuse>0.6 0.4 0.2 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+```
 
-## Deliverables
+Add more furniture. Chairs. Shelves. A bed. Make it realistic.
 
-- Working Gazebo world file
-- Robot SDF with sensors
-- Launch files for easy startup
-- README with setup instructions
+## Step 2: Add Your Robot
+
+Include your humanoid robot model:
+
+```xml
+<!-- Add robot to world -->
+<include>
+  <uri>model://my_humanoid</uri>
+  <pose>0 0 1.0 0 0 0</pose>
+  <name>robot</name>
+</include>
+```
+
+The robot spawns in the center. One meter above ground.
+
+## Step 3: Configure Sensors
+
+Your robot needs sensors. Add them to the robot SDF.
+
+### Camera Sensor
+
+```xml title="models/my_humanoid/model.sdf"
+<sensor name="camera" type="camera">
+  <pose>0.1 0 1.6 0 0 0</pose>
+  <camera>
+    <horizontal_fov>1.047</horizontal_fov>
+    <image>
+      <width>640</width>
+      <height>480</height>
+    </image>
+    <clip>
+      <near>0.1</near>
+      <far>100</far>
+    </clip>
+  </camera>
+  <update_rate>30</update_rate>
+  <topic>/camera/image_raw</topic>
+</sensor>
+```
+
+This creates a camera. It publishes to ROS 2. 30 frames per second.
+
+### Depth Camera
+
+```xml
+<sensor name="depth_camera" type="depth_camera">
+  <pose>0.1 0 1.6 0 0 0</pose>
+  <camera>
+    <horizontal_fov>1.047</horizontal_fov>
+    <image>
+      <width>640</width>
+      <height>480</height>
+      <format>R_FLOAT32</format>
+    </image>
+    <clip>
+      <near>0.1</near>
+      <far>10</far>
+    </clip>
+  </camera>
+  <update_rate>10</update_rate>
+  <topic>/camera/depth/image_raw</topic>
+</sensor>
+```
+
+This provides depth information. Essential for navigation.
+
+### IMU Sensor
+
+```xml
+<sensor name="imu" type="imu">
+  <pose>0 0 0.5 0 0 0</pose>
+  <imu>
+    <angular_velocity>
+      <x>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </x>
+      <y>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </y>
+      <z>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </z>
+    </angular_velocity>
+    <linear_acceleration>
+      <x>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.1</stddev>
+        </noise>
+      </x>
+      <y>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.1</stddev>
+        </noise>
+      </y>
+      <z>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.1</stddev>
+        </noise>
+      </z>
+    </linear_acceleration>
+  </imu>
+  <update_rate>100</update_rate>
+  <topic>/imu</topic>
+</sensor>
+```
+
+The IMU tracks orientation. It includes realistic noise.
+
+## Step 4: Launch File
+
+Create a launch file. This starts everything:
+
+```python title="launch/apartment_sim.launch.py"
+# Library: ros2 launch v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+from launch import LaunchDescription
+from launch.actions import ExecuteProcess, IncludeLaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    return LaunchDescription([
+        # Start Gazebo with apartment world
+        ExecuteProcess(
+            cmd=['gz', 'sim', '-r', 'apartment.sdf'],
+            output='screen'
+        ),
+
+        # Start robot state publisher
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            name='robot_state_publisher',
+            parameters=[{'robot_description': 'path/to/your/robot.urdf'}],
+            output='screen'
+        ),
+
+        # Start RViz with config
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', 'config/rviz_config.rviz'],
+            output='screen'
+        ),
+    ])
+```
+
+This launches Gazebo. It starts RViz. It publishes robot state.
+
+## Step 5: Running Your Project
+
+### Start the Simulation
+
+```bash
+ros2 launch apartment_project apartment_sim.launch.py
+```
+
+Wait for Gazebo to load. This takes 10-30 seconds.
+
+### Check Topics
+
+Verify sensors publish data:
+
+```bash
+ros2 topic list
+```
+
+You should see:
+- `/camera/image_raw`
+- `/camera/depth/image_raw`
+- `/imu`
+- `/joint_states`
+
+### Monitor Data
+
+Check camera images:
+
+```bash
+ros2 run rqt_image_view rqt_image_view
+```
+
+Select `/camera/image_raw`. You should see the robot's view.
+
+Check IMU data:
+
+```bash
+ros2 topic echo /imu
+```
+
+You should see orientation and acceleration updates.
+
+### Example 2: Debugging Sensors
+
+**Type**: Scenario
+
+**Context**: Your camera shows black. No image appears.
+
+**Explanation**: First, check the topic. Run `ros2 topic echo /camera/image_raw`. If no data appears, the sensor isn't publishing. Check your SDF file. Is the camera plugin loaded? Does the topic name match? If data appears in echo but not in rqt_image_view, check the image format. RGB8 is standard. Still broken? Check Gazebo console for errors. Most problems are typos or missing plugins.
+
+**Takeaway**: Debugging sensors requires systematic checks. Topics, plugins, formats, and error logs.
+
+## Step 6: Testing and Validation
+
+### Performance Test
+
+Check simulation speed:
+
+```bash
+gz topic -e -t /stats
+```
+
+Look for `real_time_factor`. Should be close to 1.0. If below 0.5, your simulation is too slow.
+
+### Sensor Rate Test
+
+Measure camera frame rate:
+
+```bash
+ros2 topic hz /camera/image_raw
+```
+
+Should report around 30 Hz. If lower, something is wrong.
+
+### Navigation Test
+
+Move the robot. Use keyboard teleop:
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+The robot should move smoothly. No jitter. No crashes.
+
+## Common Issues
+
+### Issue 1: Simulation is Slow
+
+**Problem**: Real-time factor below 0.5.
+
+**Solutions**:
+- Reduce physics step size
+- Simplify models (fewer polygons)
+- Disable shadows in Gazebo
+- Use simpler sensor configurations
+
+### Issue 2: Robot Falls Through Floor
+
+**Problem**: Robot spawns and immediately falls.
+
+**Solution**: Check collision geometries. Ensure ground plane has collision element. Verify robot spawn height is correct.
+
+### Issue 3: No Sensor Data
+
+**Problem**: Topics exist but no data.
+
+**Solutions**:
+- Check plugin is loaded
+- Verify topic names match
+- Ensure sensors have update_rate set
+- Check Gazebo console for errors
+
+## Enhancements
+
+Ready to improve your project? Try these:
+
+### Add More Rooms
+
+Expand the apartment:
+- Bedroom
+- Bathroom
+- Balcony
+
+### Better Furniture
+
+Use mesh models for realism:
+- Download models from Gazebo Fuel
+- Create custom meshes in Blender
+- Add textures for visual quality
+
+### Dynamic Objects
+
+Make objects movable:
+- Doors that open
+- Chairs that can be pushed
+- Objects the robot can pick up
+
+### Multiple Robots
+
+Add a second robot:
+- Test multi-agent coordination
+- Avoid collisions
+- Share sensor data
+
+## Summary
+
+You've built a complete digital twin. A realistic apartment. A humanoid robot. Multiple sensors. ROS 2 integration. This is a foundation. You can expand it. Add complexity. Test algorithms. Deploy to real robots.
+
+Key achievements:
+- Created realistic environment
+- Integrated sensors properly
+- Configured ROS 2 communication
+- Tested and validated the system
 
 ## Next Steps
 
-With your digital twin complete, you're ready to:
-- Implement autonomous navigation
-- Add voice control
-- Test manipulation tasks
+With your digital twin working, you're ready for advanced topics.
+
+**Continue to**: [Module 3: Isaac Platform](../module3-isaac-platform/index.mdx)
+
+**Related topics**:
+- [Gazebo Setup](./gazebo-setup.mdx)
+- [Sensor Simulation](./sensor-simulation.mdx)
+- [Humanoid URDF/SDF](./humanoid-urdf-sdf.mdx)
+
+## Challenge Extensions
+
+Want more practice?
+
+**Challenge 1**: Add a lidar sensor. Configure it for navigation.
+
+**Challenge 2**: Create a second apartment layout. Make it larger. More complex.
+
+**Challenge 3**: Add interactive objects. Doors. Drawers. Lights.
+
+**Challenge 4**: Implement a simple task. Robot navigates to kitchen. Finds an object. Returns.
+
+These challenges deepen your understanding. They prepare you for real robot projects.

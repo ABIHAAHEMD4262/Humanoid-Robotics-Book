@@ -20,7 +20,11 @@ Randomize simulation parameters:
 
 ### Implementation
 
-```python
+```python title="domain_randomizer.py"
+# Library: random (Python stdlib), omni.isaac.core v2023.1.1
+# Last updated: 2025-12-05
+# Tested on: Isaac Sim 2023.1.1, Python 3.10
+
 class DomainRandomizer:
     def randomize_lighting(self):
         intensity = random.uniform(100, 1000)

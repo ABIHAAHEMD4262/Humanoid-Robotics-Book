@@ -1,0 +1,489 @@
+# 2.2 Publishers - Sending Data
+
+**Estimated Reading Time**: 8 minutes
+**Prerequisites**: 2.1 rclpy Basics
+**Difficulty**: Beginner
+
+## Introduction
+
+Publishers send data to topics. You learned the concept in Chapter 1. Now learn the implementation.
+
+This subtopic shows you how to create publishers in Python. You'll learn message types. Publishing rates. Quality of Service settings.
+
+## Creating a Publisher
+
+Use `create_publisher()` to make a publisher:
+
+```python
+self.publisher = self.create_publisher(MessageType, 'topic_name', queue_size)
+```
+
+**Parameters**:
+- `MessageType`: The type of message to publish
+- `'topic_name'`: The topic to publish to
+- `queue_size`: How many messages to buffer (usually 10)
+
+### Simple Publisher Example
+
+```python title="simple_publisher.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class SimplePublisher(Node):
+    def __init__(self):
+        super().__init__('simple_publisher')
+        self.publisher = self.create_publisher(String, 'robot_status', 10)
+        self.get_logger().info('Publisher created')
+
+    def publish_message(self, text):
+        msg = String()
+        msg.data = text
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Published: {text}')
+
+def main():
+    rclpy.init()
+    node = SimplePublisher()
+    node.publish_message('Hello from publisher!')
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+This publishes one message and exits.
+
+## Publishing Periodically with Timers
+
+Most publishers send data repeatedly. Use timers:
+
+```python title="periodic_publisher.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class PeriodicPublisher(Node):
+    def __init__(self):
+        super().__init__('periodic_publisher')
+
+        # Create publisher
+        self.publisher = self.create_publisher(String, 'robot_status', 10)
+
+        # Create timer (publishes every 1 second)
+        self.timer = self.create_timer(1.0, self.timer_callback)
+
+        self.counter = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = f'Message {self.counter}'
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Published: {msg.data}')
+        self.counter += 1
+
+def main():
+    rclpy.init()
+    node = PeriodicPublisher()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Code Breakdown
+
+**Key lines**:
+
+1. `self.create_timer(1.0, self.timer_callback)` - Create a timer
+   - `1.0`: Period in seconds
+   - `self.timer_callback`: Function to call
+
+2. `def timer_callback(self)` - Called every second
+   - Creates message
+   - Publishes message
+   - Increments counter
+
+3. `self.publisher.publish(msg)` - Send the message
+
+The timer automatically calls your callback. No manual loops needed.
+
+## Common Message Types
+
+ROS 2 provides standard message types:
+
+### std_msgs
+
+Basic types:
+
+```python
+from std_msgs.msg import String, Int32, Float32, Bool
+
+# String message
+msg = String()
+msg.data = "Hello"
+
+# Integer message
+msg = Int32()
+msg.data = 42
+
+# Float message
+msg = Float32()
+msg.data = 3.14
+
+# Boolean message
+msg = Bool()
+msg.data = True
+```
+
+### geometry_msgs
+
+For positions, velocities, poses:
+
+```python
+from geometry_msgs.msg import Twist, Point, Pose
+
+# Velocity command
+msg = Twist()
+msg.linear.x = 1.0   # Forward velocity
+msg.angular.z = 0.5  # Rotation velocity
+
+# Point in 3D space
+msg = Point()
+msg.x = 1.0
+msg.y = 2.0
+msg.z = 3.0
+```
+
+### sensor_msgs
+
+For sensor data:
+
+```python
+from sensor_msgs.msg import Image, LaserScan, Imu
+
+# Messages are more complex
+# Usually filled by sensor drivers
+```
+
+## Real-World Publisher Example
+
+Let's create a temperature sensor publisher:
+
+```python title="temperature_publisher.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+import random
+
+class TemperaturePublisher(Node):
+    def __init__(self):
+        super().__init__('temperature_publisher')
+
+        # Create publisher
+        self.publisher = self.create_publisher(
+            Float32,
+            '/sensors/temperature',
+            10
+        )
+
+        # Publish every 0.5 seconds (2 Hz)
+        self.timer = self.create_timer(0.5, self.publish_temperature)
+
+        self.temperature = 25.0
+
+    def publish_temperature(self):
+        # Simulate temperature sensor
+        noise = random.uniform(-0.5, 0.5)
+        self.temperature += noise
+
+        # Create and publish message
+        msg = Float32()
+        msg.data = self.temperature
+        self.publisher.publish(msg)
+
+        self.get_logger().info(f'Temperature: {self.temperature:.2f}°C')
+
+def main():
+    rclpy.init()
+    node = TemperaturePublisher()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Example 1: Temperature Sensor Scenario
+
+**Type**: Scenario
+
+**Context**: You have a robot with a temperature sensor. You want to publish readings for other nodes to use.
+
+**Explanation**: This publisher simulates a real temperature sensor. It publishes at 2 Hz (twice per second). Other nodes can subscribe to `/sensors/temperature` and react. Maybe one node logs the data. Another node activates cooling if temperature is too high. The publisher doesn't know or care who subscribes. It just sends data reliably.
+
+**Takeaway**: Publishers provide data independence. Nodes remain decoupled.
+
+## Publishing Rates
+
+Choose appropriate rates:
+
+**Fast (10-100 Hz)**:
+- Camera images
+- IMU data
+- Joint states
+
+**Medium (1-10 Hz)**:
+- Temperature sensors
+- Battery status
+- GPS position
+
+**Slow (0.1-1 Hz)**:
+- System diagnostics
+- Heartbeat messages
+- Slow-changing state
+
+**Trade-off**: Higher rates consume more bandwidth and CPU.
+
+## Queue Size (QoS Depth)
+
+The queue size parameter controls buffering:
+
+```python
+self.publisher = self.create_publisher(String, 'topic', 10)
+#                                                        ^^
+#                                                  queue size
+```
+
+**Small queue (10)**:
+- For fast-changing data
+- Old data becomes stale quickly
+- Example: Camera images
+
+**Large queue (100+)**:
+- For important data you can't lose
+- Data stays relevant longer
+- Example: Commands, diagnostics
+
+**Default**: Use 10 for most cases.
+
+## Quality of Service (QoS)
+
+QoS controls message delivery guarantees:
+
+```python
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+
+# Create custom QoS
+qos = QoSProfile(
+    depth=10,
+    reliability=ReliabilityPolicy.RELIABLE,
+    durability=DurabilityPolicy.TRANSIENT_LOCAL
+)
+
+# Use custom QoS
+self.publisher = self.create_publisher(String, 'topic', qos)
+```
+
+**Reliability**:
+- `RELIABLE`: Guarantees delivery (like TCP)
+- `BEST_EFFORT`: May lose messages (like UDP, faster)
+
+**Durability**:
+- `VOLATILE`: Only send to current subscribers
+- `TRANSIENT_LOCAL`: Send to late-joining subscribers
+
+**Default QoS works for most cases**. Customize only when needed.
+
+## Checking Your Publisher
+
+Verify your publisher is working:
+
+```bash
+# List all topics
+ros2 topic list
+
+# See topic details
+ros2 topic info /sensors/temperature
+
+# Echo messages in real-time
+ros2 topic echo /sensors/temperature
+
+# Check publishing rate
+ros2 topic hz /sensors/temperature
+```
+
+## Multiple Publishers in One Node
+
+You can create multiple publishers:
+
+```python
+class MultiPublisher(Node):
+    def __init__(self):
+        super().__init__('multi_publisher')
+
+        # Publisher 1
+        self.temp_pub = self.create_publisher(
+            Float32, '/sensors/temperature', 10)
+
+        # Publisher 2
+        self.battery_pub = self.create_publisher(
+            Float32, '/sensors/battery', 10)
+
+        # Different timer for each
+        self.timer1 = self.create_timer(1.0, self.publish_temp)
+        self.timer2 = self.create_timer(5.0, self.publish_battery)
+
+    def publish_temp(self):
+        msg = Float32()
+        msg.data = 25.0
+        self.temp_pub.publish(msg)
+
+    def publish_battery(self):
+        msg = Float32()
+        msg.data = 12.5
+        self.battery_pub.publish(msg)
+```
+
+Each publisher can have its own rate.
+
+## Common Mistakes
+
+### Mistake 1: Not Storing Publisher
+
+```python
+# Wrong - publisher gets garbage collected
+def __init__(self):
+    self.create_publisher(String, 'topic', 10)  # Lost!
+```
+
+Always store the publisher:
+```python
+# Correct
+def __init__(self):
+    self.publisher = self.create_publisher(String, 'topic', 10)
+```
+
+### Mistake 2: Publishing Before Subscribers Connect
+
+```python
+# May not work - subscriber not ready yet
+def __init__(self):
+    self.publisher = self.create_publisher(String, 'topic', 10)
+    msg = String()
+    msg.data = "Hello"
+    self.publisher.publish(msg)  # Too fast!
+```
+
+Solution: Use timers or wait for subscribers:
+```python
+# Better - wait for subscribers
+while self.publisher.get_subscription_count() == 0:
+    time.sleep(0.1)
+self.publisher.publish(msg)
+```
+
+Or use TRANSIENT_LOCAL QoS to store messages for late subscribers.
+
+### Mistake 3: Creating Messages Outside Callback
+
+```python
+# Bad - message reused, causes issues
+self.msg = String()
+
+def timer_callback(self):
+    self.msg.data = "Hello"
+    self.publisher.publish(self.msg)
+```
+
+Create fresh messages in callback:
+```python
+# Good - new message each time
+def timer_callback(self):
+    msg = String()
+    msg.data = "Hello"
+    self.publisher.publish(msg)
+```
+
+## Best Practices
+
+### 1. Use Descriptive Topic Names
+
+```python
+# Good
+'/sensors/temperature'
+'/camera/image_raw'
+'/robot/battery_status'
+
+# Bad
+'/temp'
+'/img'
+'/data'
+```
+
+### 2. Choose Appropriate Rates
+
+```python
+# Temperature doesn't change fast - 1 Hz is fine
+self.timer = self.create_timer(1.0, self.callback)
+
+# IMU data changes fast - 100 Hz needed
+self.timer = self.create_timer(0.01, self.callback)
+```
+
+### 3. Log Publishing Events
+
+```python
+def timer_callback(self):
+    msg = Float32()
+    msg.data = 25.0
+    self.publisher.publish(msg)
+    self.get_logger().info(f'Published: {msg.data}')  # Good!
+```
+
+## Summary
+
+- Use `create_publisher()` to create publishers
+- Use `create_timer()` for periodic publishing
+- Message types come from packages like std_msgs, geometry_msgs
+- Queue size controls message buffering (default: 10)
+- Publishing rate should match data update rate
+- Always store the publisher reference
+- Create new message instances in callbacks
+
+## Next Steps
+
+You can send data with publishers. Next, learn how to receive data with subscribers.
+
+**Continue to**: [2.3 Subscribers - Receiving Data](./2.3-subscribers.mdx)
+
+**Related topics**:
+- [1.2 Topics](../chapter1-core-concepts/1.2-topics.mdx)
+- [2.1 rclpy Basics](./2.1-rclpy-basics.mdx)
+- [Chapter 2 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a publisher that sends your name every 2 seconds
+2. Create a publisher that sends random numbers
+3. Use `ros2 topic echo` to verify your messages
+4. Experiment with different publishing rates

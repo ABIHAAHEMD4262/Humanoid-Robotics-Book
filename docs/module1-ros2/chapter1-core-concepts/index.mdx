@@ -1,0 +1,99 @@
+# Chapter 1: Core Communication Patterns
+
+**Estimated Chapter Time**: 30 minutes
+**Prerequisites**: Module 1 Introduction
+**Difficulty**: Beginner
+
+## Chapter Overview
+
+ROS 2 has four fundamental building blocks for robot communication. Nodes. Topics. Services. Actions. These are the vocabulary that lets robots talk to each other.
+
+This chapter teaches you each communication pattern. You'll understand when to use each one. You'll see how they work together in real robot systems.
+
+## Learning Objectives
+
+By the end of this chapter, you will:
+
+- Understand what nodes are and why robots use them
+- Know how to use topics for streaming data
+- Use services for request-response communication
+- Implement actions for long-running tasks
+- Choose the right communication pattern for any scenario
+
+## Chapter Structure
+
+This chapter contains 4 subtopics:
+
+### [1.1 Nodes - The Building Blocks](./1.1-nodes.mdx)
+Learn what nodes are, why they matter, and how to create your first node.
+
+**Key Concepts**: Node purpose, modularity, parallel processing, fault isolation
+
+**Estimated Time**: 8 minutes
+
+---
+
+### [1.2 Topics - Streaming Data](./1.2-topics.mdx)
+Understand publisher-subscriber patterns for continuous data streams.
+
+**Key Concepts**: Publishers, subscribers, message types, topic communication
+
+**Estimated Time**: 8 minutes
+
+---
+
+### [1.3 Services - Request-Response](./1.3-services.mdx)
+Learn synchronous request-response patterns for quick queries and commands.
+
+**Key Concepts**: Service servers, service clients, synchronous communication
+
+**Estimated Time**: 7 minutes
+
+---
+
+### [1.4 Actions - Long-Running Tasks](./1.4-actions.mdx)
+Implement actions for tasks that need feedback and cancellation support.
+
+**Key Concepts**: Action servers, action clients, goals, feedback, results
+
+**Estimated Time**: 7 minutes
+
+---
+
+## Prerequisites
+
+Before starting this chapter:
+
+- Complete Module 1 Introduction
+- Have ROS 2 Humble installed
+- Basic Python knowledge helpful but not required
+
+## What You'll Build
+
+Throughout this chapter, you'll create:
+
+- A simple node that logs messages
+- A temperature publisher and subscriber
+- A calculation service (client and server)
+- Understanding of when to use each pattern
+
+## Why This Matters
+
+These four patterns are the foundation of every ROS 2 robot. Master them now. Everything else builds on these concepts.
+
+A humanoid robot uses all four:
+- **Nodes** separate camera, planning, and motor control
+- **Topics** stream sensor data continuously
+- **Services** query current state quickly
+- **Actions** execute walking and manipulation tasks
+
+## Next Steps
+
+Start with [1.1 Nodes](./1.1-nodes.mdx) to learn the fundamental building blocks.
+
+**Quick Navigation**:
+- [1.1 Nodes](./1.1-nodes.mdx)
+- [1.2 Topics](./1.2-topics.mdx)
+- [1.3 Services](./1.3-services.mdx)
+- [1.4 Actions](./1.4-actions.mdx)
+- [Chapter 2: Python Development →](../chapter2-python-rclpy/index.mdx)

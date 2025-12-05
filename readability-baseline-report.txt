@@ -1,0 +1,268 @@
+
+> humanoid_robotics_book@0.0.0 readability-check
+> node scripts/check-readability.js
+
+📖 Readability Check: AI-Native Book for Physical AI & Humanoid Robotics
+
+Threshold: Flesch Reading Ease ≥ 60 (FR-004 requirement)
+Scanning: docs/**/*.{md,mdx}
+
+Found 42 files to analyze
+
+═══════════════════════════════════════════════════════════════════
+READABILITY SCORES
+═══════════════════════════════════════════════════════════════════
+
+❌ -4.63 | Very Difficult (College Graduate)        | module3-isaac-platform\domain-randomization-sim2real.mdx
+❌ -1.25 | Very Difficult (College Graduate)        | module2-digital-twin\unity-hri.mdx
+❌  2.49 | Very Difficult (College Graduate)        | module3-isaac-platform\isaac-sim-sdg.mdx
+❌  3.07 | Very Difficult (College Graduate)        | module3-isaac-platform\mini-project-navigation.mdx
+❌  4.12 | Very Difficult (College Graduate)        | module3-isaac-platform\nav2-bipedal.mdx
+❌  5.56 | Very Difficult (College Graduate)        | module4-vla\e2e-vla-pipeline.mdx
+❌  5.62 | Very Difficult (College Graduate)        | module4-vla\whisper-stt.mdx
+❌  6.43 | Very Difficult (College Graduate)        | module3-isaac-platform\index.mdx
+❌ 11.68 | Very Difficult (College Graduate)        | module3-isaac-platform\isaac-ros-perception.mdx
+❌  16.7 | Very Difficult (College Graduate)        | appendices\index.mdx
+❌ 17.77 | Very Difficult (College Graduate)        | module1-ros2\urdf-xacro.mdx
+❌ 18.19 | Very Difficult (College Graduate)        | module2-digital-twin\index.mdx
+❌  19.1 | Very Difficult (College Graduate)        | module4-vla\real-robot-deployment.mdx
+❌ 19.75 | Very Difficult (College Graduate)        | appendices\devcontainer-docker-setup.mdx
+❌  19.8 | Very Difficult (College Graduate)        | module1-ros2\mini-project-gait-publisher.mdx
+❌ 19.87 | Very Difficult (College Graduate)        | module4-vla\capstone-project.mdx
+❌ 20.88 | Very Difficult (College Graduate)        | module0-foundations\index.mdx
+❌ 21.54 | Very Difficult (College Graduate)        | module2-digital-twin\sensor-simulation.mdx
+❌ 22.16 | Very Difficult (College Graduate)        | module4-vla\index.mdx
+❌  23.1 | Very Difficult (College Graduate)        | module2-digital-twin\humanoid-urdf-sdf.mdx
+❌ 24.87 | Very Difficult (College Graduate)        | appendices\hardware-guide.mdx
+❌ 25.11 | Very Difficult (College Graduate)        | module2-digital-twin\gazebo-setup.mdx
+❌ 25.91 | Very Difficult (College Graduate)        | module1-ros2\core-concepts.mdx
+❌ 25.99 | Very Difficult (College Graduate)        | module2-digital-twin\mini-project-environment.mdx
+❌ 29.01 | Very Difficult (College Graduate)        | module4-vla\llm-task-planning.mdx
+❌ 34.52 | Difficult (College)                      | introduction\index.mdx
+❌ 37.55 | Difficult (College)                      | module1-ros2\python-rclpy.mdx
+❌ 39.16 | Difficult (College)                      | tutorial-basics\create-a-document.md
+❌ 39.93 | Difficult (College)                      | appendices\troubleshooting-faq.mdx
+❌ 40.69 | Difficult (College)                      | intro.md
+❌ 41.43 | Difficult (College)                      | tutorial-basics\congratulations.md
+❌ 43.47 | Difficult (College)                      | tutorial-basics\markdown-features.mdx
+❌ 43.47 | Difficult (College)                      | module1-ros2\index.mdx
+❌ 44.17 | Difficult (College)                      | appendices\cloud-path.mdx
+❌ 46.78 | Difficult (College)                      | test-diagram.mdx
+❌  53.4 | Fairly Difficult (10th-12th grade)       | appendices\jetson-bom.mdx
+❌ 55.44 | Fairly Difficult (10th-12th grade)       | module1-ros2\ros2-packages.mdx
+✅ 66.83 | Standard (8th-9th grade) ✅               | tutorial-extras\manage-docs-versions.md
+✅ 67.31 | Standard (8th-9th grade) ✅               | tutorial-basics\deploy-your-site.md
+✅ 70.08 | Fairly Easy (7th grade)                  | tutorial-basics\create-a-page.md
+✅ 74.96 | Fairly Easy (7th grade)                  | tutorial-extras\translate-your-site.md
+✅ 82.54 | Easy (6th grade)                         | tutorial-basics\create-a-blog-post.md
+
+═══════════════════════════════════════════════════════════════════
+SUMMARY
+═══════════════════════════════════════════════════════════════════
+
+Total Files: 42
+Analyzed: 42
+Skipped: 0
+Passed (≥60): 5/42 (11.9%)
+Failed (<60): 37/42
+Average Score: 30.11
+
+═══════════════════════════════════════════════════════════════════
+FAILED FILES (NEED IMPROVEMENT)
+═══════════════════════════════════════════════════════════════════
+
+❌ test-diagram.mdx
+   Score: 46.78 (Difficult (College))
+   Target: 60+
+   Gap: 13.22 points
+
+❌ intro.md
+   Score: 40.69 (Difficult (College))
+   Target: 60+
+   Gap: 19.31 points
+
+❌ tutorial-basics\markdown-features.mdx
+   Score: 43.47 (Difficult (College))
+   Target: 60+
+   Gap: 16.53 points
+
+❌ tutorial-basics\create-a-document.md
+   Score: 39.16 (Difficult (College))
+   Target: 60+
+   Gap: 20.84 points
+
+❌ tutorial-basics\congratulations.md
+   Score: 41.43 (Difficult (College))
+   Target: 60+
+   Gap: 18.57 points
+
+❌ module4-vla\whisper-stt.mdx
+   Score: 5.62 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 54.38 points
+
+❌ module4-vla\real-robot-deployment.mdx
+   Score: 19.1 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 40.90 points
+
+❌ module4-vla\llm-task-planning.mdx
+   Score: 29.01 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 30.99 points
+
+❌ module4-vla\index.mdx
+   Score: 22.16 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 37.84 points
+
+❌ module4-vla\e2e-vla-pipeline.mdx
+   Score: 5.56 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 54.44 points
+
+❌ module4-vla\capstone-project.mdx
+   Score: 19.87 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 40.13 points
+
+❌ module3-isaac-platform\nav2-bipedal.mdx
+   Score: 4.12 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 55.88 points
+
+❌ module3-isaac-platform\mini-project-navigation.mdx
+   Score: 3.07 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 56.93 points
+
+❌ module3-isaac-platform\isaac-sim-sdg.mdx
+   Score: 2.49 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 57.51 points
+
+❌ module3-isaac-platform\isaac-ros-perception.mdx
+   Score: 11.68 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 48.32 points
+
+❌ module3-isaac-platform\index.mdx
+   Score: 6.43 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 53.57 points
+
+❌ module3-isaac-platform\domain-randomization-sim2real.mdx
+   Score: -4.63 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 64.63 points
+
+❌ module2-digital-twin\unity-hri.mdx
+   Score: -1.25 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 61.25 points
+
+❌ module2-digital-twin\sensor-simulation.mdx
+   Score: 21.54 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 38.46 points
+
+❌ module2-digital-twin\mini-project-environment.mdx
+   Score: 25.99 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 34.01 points
+
+❌ module2-digital-twin\index.mdx
+   Score: 18.19 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 41.81 points
+
+❌ module2-digital-twin\humanoid-urdf-sdf.mdx
+   Score: 23.1 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 36.90 points
+
+❌ module2-digital-twin\gazebo-setup.mdx
+   Score: 25.11 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 34.89 points
+
+❌ module1-ros2\urdf-xacro.mdx
+   Score: 17.77 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 42.23 points
+
+❌ module1-ros2\ros2-packages.mdx
+   Score: 55.44 (Fairly Difficult (10th-12th grade))
+   Target: 60+
+   Gap: 4.56 points
+
+❌ module1-ros2\python-rclpy.mdx
+   Score: 37.55 (Difficult (College))
+   Target: 60+
+   Gap: 22.45 points
+
+❌ module1-ros2\mini-project-gait-publisher.mdx
+   Score: 19.8 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 40.20 points
+
+❌ module1-ros2\index.mdx
+   Score: 43.47 (Difficult (College))
+   Target: 60+
+   Gap: 16.53 points
+
+❌ module1-ros2\core-concepts.mdx
+   Score: 25.91 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 34.09 points
+
+❌ module0-foundations\index.mdx
+   Score: 20.88 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 39.12 points
+
+❌ introduction\index.mdx
+   Score: 34.52 (Difficult (College))
+   Target: 60+
+   Gap: 25.48 points
+
+❌ appendices\troubleshooting-faq.mdx
+   Score: 39.93 (Difficult (College))
+   Target: 60+
+   Gap: 20.07 points
+
+❌ appendices\jetson-bom.mdx
+   Score: 53.4 (Fairly Difficult (10th-12th grade))
+   Target: 60+
+   Gap: 6.60 points
+
+❌ appendices\index.mdx
+   Score: 16.7 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 43.30 points
+
+❌ appendices\hardware-guide.mdx
+   Score: 24.87 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 35.13 points
+
+❌ appendices\devcontainer-docker-setup.mdx
+   Score: 19.75 (Very Difficult (College Graduate))
+   Target: 60+
+   Gap: 40.25 points
+
+❌ appendices\cloud-path.mdx
+   Score: 44.17 (Difficult (College))
+   Target: 60+
+   Gap: 15.83 points
+
+Improvement Tips:
+  • Simplify complex sentences (aim for 15-20 words)
+  • Break long paragraphs into shorter ones
+  • Replace jargon with plain language (or explain technical terms)
+  • Use active voice ("The robot detects" not "is detected by")
+  • Add transitions and concrete examples
+  • Note: FR-013b allows technical term exceptions with manual review
+
+❌ READABILITY CHECK FAILED
+

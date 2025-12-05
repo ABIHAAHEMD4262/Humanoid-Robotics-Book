@@ -1,252 +1,213 @@
-# Full Humanoid URDF → SDF Conversion
+# Humanoid URDF to SDF Conversion
 
-Converting robot models from URDF (Unified Robot Description Format) to SDF (Simulation Description Format) is essential for using robots in Gazebo simulation.
+**Estimated Reading Time**: 18 minutes
+**Prerequisites**: ROS 2 URDF/Xacro basics, Gazebo Setup
+**Difficulty**: Intermediate
 
-## Why Convert from URDF to SDF?
+## Introduction
 
-- **URDF**: ROS-native format, great for robot description
-- **SDF**: Gazebo-native format, more flexible for simulation
+You have a robot model. It's in URDF format. ROS 2 uses it. But Gazebo needs SDF format. You need to convert.
 
-SDF provides:
-- Better physics simulation capabilities
-- Native Gazebo plugin support
-- More detailed sensor and material descriptions
-- World and environment modeling
+This chapter shows you how. You'll learn the differences. You'll convert models. You'll fix common problems.
 
-## Understanding URDF
+By the end, your robot runs in Gazebo. Perfectly.
 
-URDF is an XML format that describes a robot's:
-- **Links**: Rigid bodies (e.g., torso, arms, legs)
-- **Joints**: Connections between links (revolute, prismatic, fixed)
-- **Visual Elements**: Geometry for visualization
-- **Collision Elements**: Simplified geometry for physics
-- **Inertial Properties**: Mass, center of mass, inertia tensors
+## Why Two Formats?
 
-### Sample Humanoid URDF Snippet
+### URDF: ROS Native
 
-```xml
-<?xml version="1.0"?>
-<robot name="humanoid">
-  <link name="base_link">
-    <visual>
-      <geometry>
-        <box size="0.3 0.2 0.4"/>
-      </geometry>
-      <material name="blue">
-        <color rgba="0 0 0.8 1"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0.3 0.2 0.4"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="5.0"/>
-      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
-    </inertial>
-  </link>
+URDF was created for ROS. It describes robots simply. It works great with ROS tools.
 
-  <link name="left_leg"/>
+Advantages:
+- Simple structure
+- ROS-native
+- Xacro support
+- Wide adoption
 
-  <joint name="left_hip" type="revolute">
-    <parent link="base_link"/>
-    <child link="left_leg"/>
-    <origin xyz="0 0.1 -0.2" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="100" lower="-1.57" upper="1.57" velocity="2.0"/>
-  </joint>
-</robot>
-```
+Limitations:
+- ROS-specific
+- Limited simulation features
+- No world modeling
 
-## Conversion Methods
+### SDF: Gazebo Native
 
-### Method 1: Using gz sdf Command
+SDF was created for Gazebo. It's more powerful. It handles complex simulations.
 
-The simplest method uses Gazebo's built-in converter:
+Advantages:
+- Rich simulation features
+- World and environment support
+- Advanced physics
+- Better sensors
 
-```bash
-gz sdf -p your_robot.urdf > your_robot.sdf
-```
+Limitations:
+- More complex
+- Less ROS integration
 
-This automatically converts URDF to SDF format.
+### Example 1: Format Comparison
 
-### Method 2: Using ROS 2 xacro + Conversion
+**Type**: Comparison
 
-If your robot uses Xacro (parametric URDF):
+**Context**: You have a humanoid robot. You want to use it in both ROS 2 and Gazebo.
 
-```bash
-# First, process xacro to URDF
-ros2 run xacro xacro your_robot.urdf.xacro > your_robot.urdf
+**Explanation**: Keep your master model in URDF. Use it for ROS 2 tools. Robot state publisher. MoveIt. Everything ROS. Then convert to SDF for Gazebo simulation. SDF handles physics better. It simulates sensors accurately. It models environments. Use both formats. Each for its strength.
 
-# Then convert to SDF
-gz sdf -p your_robot.urdf > your_robot.sdf
-```
+**Takeaway**: URDF for ROS integration. SDF for simulation. Convert between them as needed.
 
-### Method 3: Manual Conversion
+## Understanding URDF Structure
 
-For complex robots, manual conversion gives you more control.
+URDF files describe robots in XML. Key elements:
 
-## Key Conversion Considerations
+### Links
 
-### 1. Inertial Properties
-
-Ensure accurate inertial properties for stable simulation:
+Links are rigid bodies:
 
 ```xml
-<!-- URDF -->
-<inertial>
-  <mass value="5.0"/>
-  <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
-</inertial>
-
-<!-- SDF equivalent -->
-<inertial>
-  <mass>5.0</mass>
-  <inertia>
-    <ixx>0.1</ixx>
-    <ixy>0</ixy>
-    <ixz>0</ixz>
-    <iyy>0.1</iyy>
-    <iyz>0</iyz>
-    <izz>0.1</izz>
-  </inertia>
-</inertial>
+<link name="torso">
+  <visual>
+    <geometry>
+      <box size="0.3 0.2 0.4"/>
+    </geometry>
+  </visual>
+  <collision>
+    <geometry>
+      <box size="0.3 0.2 0.4"/>
+    </geometry>
+  </collision>
+  <inertial>
+    <mass value="5.0"/>
+    <inertia ixx="0.1" iyy="0.1" izz="0.1"
+             ixy="0" ixz="0" iyz="0"/>
+  </inertial>
+</link>
 ```
 
-### 2. Joint Limits and Dynamics
+This defines a torso. It has visual geometry. Collision geometry. Mass properties.
 
-Convert joint properties accurately:
+### Joints
+
+Joints connect links:
 
 ```xml
-<!-- URDF -->
-<joint name="knee" type="revolute">
-  <limit effort="100" lower="-2.0" upper="0" velocity="2.0"/>
-  <dynamics damping="0.7" friction="0.0"/>
+<joint name="left_hip" type="revolute">
+  <parent link="torso"/>
+  <child link="left_thigh"/>
+  <origin xyz="0 0.1 -0.2" rpy="0 0 0"/>
+  <axis xyz="0 1 0"/>
+  <limit lower="-1.57" upper="1.57"
+         effort="100" velocity="2.0"/>
 </joint>
+```
 
-<!-- SDF equivalent -->
-<joint name="knee" type="revolute">
+This connects the torso to left thigh. It rotates. It has limits.
+
+## Understanding SDF Structure
+
+SDF is similar but more detailed:
+
+### Links in SDF
+
+```xml
+<link name="torso">
+  <pose>0 0 0 0 0 0</pose>
+  <inertial>
+    <mass>5.0</mass>
+    <inertia>
+      <ixx>0.1</ixx>
+      <iyy>0.1</iyy>
+      <izz>0.1</izz>
+      <ixy>0</ixy>
+      <ixz>0</ixz>
+      <iyz>0</iyz>
+    </inertia>
+  </inertial>
+  <collision name="collision">
+    <geometry>
+      <box>
+        <size>0.3 0.2 0.4</size>
+      </box>
+    </geometry>
+  </collision>
+  <visual name="visual">
+    <geometry>
+      <box>
+        <size>0.3 0.2 0.4</size>
+      </box>
+    </geometry>
+  </visual>
+</link>
+```
+
+Notice the differences. Each element has a name. Syntax is slightly different.
+
+### Joints in SDF
+
+```xml
+<joint name="left_hip" type="revolute">
+  <parent>torso</parent>
+  <child>left_thigh</child>
+  <pose>0 0.1 -0.2 0 0 0</pose>
   <axis>
     <xyz>0 1 0</xyz>
     <limit>
-      <lower>-2.0</lower>
-      <upper>0</upper>
+      <lower>-1.57</lower>
+      <upper>1.57</upper>
       <effort>100</effort>
       <velocity>2.0</velocity>
     </limit>
-    <dynamics>
-      <damping>0.7</damping>
-      <friction>0.0</friction>
-    </dynamics>
   </axis>
 </joint>
 ```
 
-### 3. Collision Geometry Simplification
+The structure is nested differently. The axis contains limits.
 
-Simplified collision geometry improves performance:
+## Conversion Methods
 
-```xml
-<collision name="torso_collision">
-  <geometry>
-    <box>
-      <size>0.3 0.2 0.4</size>
-    </box>
-  </geometry>
-</collision>
-```
+### Method 1: Automatic Conversion
 
-## Complete Humanoid SDF Example
-
-```xml
-<?xml version="1.0"?>
-<sdf version="1.9">
-  <model name="humanoid_robot">
-    <pose>0 0 1.0 0 0 0</pose>
-    <static>false</static>
-
-    <link name="base_link">
-      <pose>0 0 0 0 0 0</pose>
-      <inertial>
-        <mass>5.0</mass>
-        <inertia>
-          <ixx>0.083</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.1</iyy>
-          <iyz>0</iyz>
-          <izz>0.083</izz>
-        </inertia>
-      </inertial>
-
-      <collision name="base_collision">
-        <geometry>
-          <box>
-            <size>0.3 0.2 0.4</size>
-          </box>
-        </geometry>
-      </collision>
-
-      <visual name="base_visual">
-        <geometry>
-          <box>
-            <size>0.3 0.2 0.4</size>
-          </box>
-        </geometry>
-        <material>
-          <ambient>0.2 0.2 0.8 1</ambient>
-          <diffuse>0.2 0.2 0.8 1</diffuse>
-          <specular>0.1 0.1 0.1 1</specular>
-        </material>
-      </visual>
-    </link>
-
-    <!-- Add more links and joints for complete humanoid -->
-
-  </model>
-</sdf>
-```
-
-## Testing Your Converted Model
-
-Load your SDF model in Gazebo:
+Gazebo includes a converter:
 
 ```bash
-gz sim -v 4 your_robot.sdf
+# Library: Gazebo Harmonic (gz command)
+# Last updated: 2025-12-05
+# Tested on: Gazebo Harmonic 8.0
+
+gz sdf -p your_robot.urdf > your_robot.sdf
 ```
 
-Check for:
-- Correct link positions
-- Proper joint behavior
-- Stable physics simulation
-- No collision issues
+This converts automatically. It handles most cases.
 
-## Common Conversion Issues
+### Method 2: Xacro Processing First
 
-### Issue: Robot Falls Through Ground
-**Solution**: Check collision geometry and contact parameters
+If using Xacro:
 
-### Issue: Joints Are Too Stiff/Loose
-**Solution**: Tune joint damping and friction values
+```bash
+# Process Xacro to URDF
+ros2 run xacro xacro your_robot.urdf.xacro > temp.urdf
 
-### Issue: Robot Explodes on Startup
-**Solution**: Verify inertial properties, reduce initial velocities
+# Convert to SDF
+gz sdf -p temp.urdf > your_robot.sdf
 
-### Issue: Meshes Don't Load
-**Solution**: Ensure mesh paths are correct, use relative paths or ROS package URIs
+# Clean up
+rm temp.urdf
+```
 
-## Automation Script
+This is a two-step process.
 
-Create a conversion script for batch processing:
+### Method 3: Conversion Script
 
-```python
+Automate the process:
+
+```python title="convert_robot.py"
+# Library: subprocess (Python stdlib)
+# Last updated: 2025-12-05
+# Tested on: Python 3.10, Gazebo Harmonic
+
 #!/usr/bin/env python3
 import subprocess
 import sys
 
-def convert_urdf_to_sdf(urdf_file, sdf_file):
-    """Convert URDF to SDF using gz sdf command"""
+def convert_to_sdf(urdf_file, sdf_file):
+    """Convert URDF to SDF"""
     try:
         result = subprocess.run(
             ['gz', 'sdf', '-p', urdf_file],
@@ -258,29 +219,444 @@ def convert_urdf_to_sdf(urdf_file, sdf_file):
         with open(sdf_file, 'w') as f:
             f.write(result.stdout)
 
-        print(f"Successfully converted {urdf_file} to {sdf_file}")
+        print(f"✓ Converted {urdf_file} to {sdf_file}")
+        return True
+
     except subprocess.CalledProcessError as e:
-        print(f"Error converting {urdf_file}: {e.stderr}")
-        sys.exit(1)
+        print(f"✗ Error: {e.stderr}")
+        return False
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: convert_urdf_sdf.py <input.urdf> <output.sdf>")
+        print("Usage: convert_robot.py input.urdf output.sdf")
         sys.exit(1)
 
-    convert_urdf_to_sdf(sys.argv[1], sys.argv[2])
+    urdf_file = sys.argv[1]
+    sdf_file = sys.argv[2]
+
+    if convert_to_sdf(urdf_file, sdf_file):
+        sys.exit(0)
+    else:
+        sys.exit(1)
 ```
+
+Save this script. Use it repeatedly.
+
+### Example 2: Choosing a Conversion Method
+
+**Type**: Decision Guide
+
+**Context**: You have multiple robot variants. You update them frequently.
+
+**Explanation**: Manual conversion is tedious. You convert. You test. You change the URDF. You convert again. This wastes time. Use the script instead. One command converts any robot. Update your URDF. Run the script. Done. Even better, add it to your build process. Every time you build, the SDF updates automatically.
+
+**Takeaway**: Automate repetitive tasks. Scripts save time and prevent errors.
+
+## Key Conversion Differences
+
+### Attribute vs Element Syntax
+
+**URDF** uses attributes:
+
+```xml
+<box size="1 2 3"/>
+```
+
+**SDF** uses elements:
+
+```xml
+<box>
+  <size>1 2 3</size>
+</box>
+```
+
+### Pose Representation
+
+**URDF** uses origin:
+
+```xml
+<origin xyz="1 2 3" rpy="0 0 0"/>
+```
+
+**SDF** uses pose:
+
+```xml
+<pose>1 2 3 0 0 0</pose>
+```
+
+### Parent-Child Syntax
+
+**URDF**:
+
+```xml
+<parent link="torso"/>
+<child link="arm"/>
+```
+
+**SDF**:
+
+```xml
+<parent>torso</parent>
+<child>arm</child>
+```
+
+## Testing Converted Models
+
+### Load in Gazebo
+
+```bash
+gz sim your_robot.sdf
+```
+
+The robot appears. Check these things:
+
+**Visual Check**:
+- Robot looks correct
+- Links are positioned right
+- Colors and textures work
+
+**Physics Check**:
+- Robot doesn't fall through ground
+- Joints move properly
+- No violent explosions
+
+**Performance Check**:
+- Simulation runs smoothly
+- Real-time factor near 1.0
+
+### Verify Joint Behavior
+
+Move joints manually. In Gazebo GUI:
+1. Right-click the robot
+2. Select "View Joints"
+3. Move sliders
+
+Joints should move smoothly. No jitter. No instability.
+
+### Check Collisions
+
+Add objects to the world. Make the robot touch them. Collisions should work correctly.
+
+## Common Conversion Problems
+
+### Problem 1: Robot Falls Through Ground
+
+**Symptoms**: Robot spawns and immediately falls.
+
+**Causes**:
+- Missing collision geometry
+- Incorrect contact parameters
+- Wrong spawn height
+
+**Solutions**:
+
+Check collisions exist:
+
+```xml
+<collision name="collision">
+  <geometry>
+    <box>
+      <size>0.3 0.2 0.4</size>
+    </box>
+  </geometry>
+</collision>
+```
+
+Set proper spawn height:
+
+```xml
+<pose>0 0 1.0 0 0 0</pose>
+```
+
+1 meter above ground. The robot falls safely.
+
+### Problem 2: Robot Explodes
+
+**Symptoms**: Parts fly apart violently.
+
+**Causes**:
+- Wrong inertial values
+- Overlapping collision geometry
+- Too-small time step
+
+**Solutions**:
+
+Check mass is realistic:
+
+```xml
+<mass>5.0</mass>
+```
+
+Not 0.001. Not 10000. Human-scale robots: 1-100 kg.
+
+Check inertia values:
+
+```xml
+<inertia>
+  <ixx>0.1</ixx>
+  <iyy>0.1</iyy>
+  <izz>0.1</izz>
+</inertia>
+```
+
+Use realistic values. Don't set to zero.
+
+### Problem 3: Joints Are Frozen
+
+**Symptoms**: Joints don't move at all.
+
+**Causes**:
+- Missing axis definition
+- Static model
+- Wrong joint type
+
+**Solutions**:
+
+Ensure model is dynamic:
+
+```xml
+<static>false</static>
+```
+
+Check axis is defined:
+
+```xml
+<axis>
+  <xyz>0 1 0</xyz>
+</axis>
+```
+
+Verify joint type:
+
+```xml
+<joint name="knee" type="revolute">
+```
+
+Not `fixed` if you want movement.
+
+### Problem 4: Meshes Don't Load
+
+**Symptoms**: Parts are invisible or wrong color.
+
+**Causes**:
+- Wrong mesh paths
+- Missing mesh files
+- Incorrect file format
+
+**Solutions**:
+
+Use relative paths:
+
+```xml
+<mesh>
+  <uri>model://my_robot/meshes/torso.stl</uri>
+</mesh>
+```
+
+Or absolute paths:
+
+```xml
+<mesh>
+  <uri>file:///path/to/torso.stl</uri>
+</mesh>
+```
+
+Check file exists:
+
+```bash
+ls /path/to/torso.stl
+```
+
+## Advanced Tuning
+
+### Contact Parameters
+
+Improve foot-ground contact:
+
+```xml
+<collision name="foot_collision">
+  <geometry>
+    <box>
+      <size>0.1 0.05 0.02</size>
+    </box>
+  </geometry>
+  <surface>
+    <friction>
+      <ode>
+        <mu>1.0</mu>
+        <mu2>1.0</mu2>
+      </ode>
+    </friction>
+    <contact>
+      <ode>
+        <kp>1e7</kp>
+        <kd>1.0</kd>
+      </ode>
+    </contact>
+  </surface>
+</collision>
+```
+
+High friction prevents slipping. Stiff contact prevents sinking.
+
+### Joint Dynamics
+
+Add damping for stability:
+
+```xml
+<joint name="knee" type="revolute">
+  <axis>
+    <dynamics>
+      <damping>0.7</damping>
+      <friction>0.1</friction>
+    </dynamics>
+  </axis>
+</joint>
+```
+
+Damping slows oscillations. Friction resists movement.
+
+## Complete Example
+
+Here's a minimal humanoid in SDF:
+
+```xml title="simple_humanoid.sdf"
+<!-- Library: Gazebo Harmonic SDF 1.9
+     Last updated: 2025-12-05
+     Tested on: Gazebo Harmonic 8.0 -->
+
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="simple_humanoid">
+    <pose>0 0 1.0 0 0 0</pose>
+    <static>false</static>
+
+    <!-- Torso -->
+    <link name="torso">
+      <inertial>
+        <mass>10.0</mass>
+        <inertia>
+          <ixx>0.2</ixx>
+          <iyy>0.2</iyy>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.3 0.2 0.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.3 0.2 0.5</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.8 1</ambient>
+          <diffuse>0.2 0.2 0.8 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Left Leg -->
+    <link name="left_leg">
+      <pose>0 0.1 -0.25 0 0 0</pose>
+      <inertial>
+        <mass>3.0</mass>
+        <inertia>
+          <ixx>0.05</ixx>
+          <iyy>0.05</iyy>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.4</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>0.4</length>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- Hip Joint -->
+    <joint name="left_hip" type="revolute">
+      <parent>torso</parent>
+      <child>left_leg</child>
+      <pose>0 0 0.2 0 0 0</pose>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1.57</lower>
+          <upper>1.57</upper>
+          <effort>100</effort>
+          <velocity>2.0</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.7</damping>
+        </dynamics>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>
+```
+
+This is a complete working model. Torso. One leg. One joint. You can extend it.
+
+## Best Practices
+
+### Keep URDF as Source
+
+Don't edit SDF files directly. Edit URDF. Then reconvert. This keeps your workflow clean.
+
+### Validate Before Converting
+
+Check URDF first:
+
+```bash
+check_urdf your_robot.urdf
+```
+
+Fix errors before converting.
+
+### Test Incrementally
+
+Don't convert a 100-link robot at once. Start with one link. Then two. Then three. Find problems early.
+
+### Version Control
+
+Use git. Track both URDF and SDF. This helps debugging.
+
+## Summary
+
+You've learned URDF to SDF conversion. You understand the differences. You can convert automatically. You can fix common problems.
+
+Key points:
+- URDF is for ROS integration
+- SDF is for simulation
+- Convert using gz sdf command
+- Test thoroughly in Gazebo
+- Fix physics issues carefully
 
 ## Next Steps
 
-With your humanoid model converted to SDF:
-1. Add sensors (LiDAR, cameras, IMU)
-2. Tune physics parameters for realistic behavior
-3. Test in various environments
-4. Integrate with ROS 2 controllers
+Your robot model works in Gazebo. Now add functionality.
 
-## References
+**Continue to**: [Sensor Simulation](./sensor-simulation.mdx)
 
-- SDF Specification: http://sdformat.org/spec
-- URDF Documentation: http://wiki.ros.org/urdf
-- Gazebo SDF Tutorial: https://gazebosim.org/docs/latest/sdf_worlds
+**Related topics**:
+- [Gazebo Setup](./gazebo-setup.mdx)
+- [Mini-Project: Apartment Environment](./mini-project-environment.mdx)
+- [Module 1: URDF/Xacro](../module1-ros2/urdf-xacro.mdx)

@@ -1,73 +1,476 @@
-# Cloud-Only Path (AWS g5/g6 instances)
+# Cloud-Only Path: AWS Development Guide
 
-Develop and test Physical AI without local GPU hardware using cloud instances.
+**Estimated Reading Time**: 12 minutes
+**Prerequisites**: Basic Linux knowledge
+**Difficulty**: Beginner
 
-## Why Cloud Development?
+## Introduction
 
-- No upfront hardware cost
-- Access to latest GPUs
-- Scalable compute resources
-- Easy collaboration
+You don't need expensive hardware to learn robotics. Cloud providers offer powerful GPUs by the hour. You pay only for what you use.
 
-## AWS Setup
+This guide shows you how to set up AWS for robotics development. You'll learn to run ROS 2, train models, and test in simulation. All without buying hardware.
 
-### Instance Types
+By the end, you'll have a complete cloud development environment.
 
-- **g5.xlarge**: $1.01/hour - Entry level
-- **g5.2xlarge**: $1.21/hour - Recommended for development
-- **g6.xlarge**: $0.94/hour - Latest generation
+## Why Use Cloud?
 
-### Launch Instance
+### Advantages
+
+**No Upfront Cost**: Don't spend $2,000+ on a workstation. Start for $1/hour.
+
+**Latest Hardware**: Access newest GPUs immediately. No waiting for hardware delivery.
+
+**Scalability**: Need more power? Scale up instantly. Done training? Scale down.
+
+**Collaboration**: Share environments easily. Multiple people can access the same setup.
+
+### Disadvantages
+
+**Ongoing Costs**: $50-200/month adds up over time.
+
+**Network Latency**: Remote desktop has slight lag.
+
+**No Offline Work**: Need internet connection.
+
+**Cannot Deploy to Physical Robots**: Cloud can't directly control local hardware.
+
+### Example 1: Cost Comparison
+
+**Type**: Comparison
+
+**Context**: You're deciding between buying a $2,000 workstation or using cloud.
+
+**Explanation**:
+- **Workstation**: $2,000 upfront. Use it 2 years. Cost: $83/month equivalent.
+- **Cloud**: $100/month. Use it 6 months while learning. Then buy hardware. Total: $600.
+- Cloud is cheaper for learning. Buy hardware later when you know what you need.
+
+**Takeaway**: Cloud is cost-effective for learning and experimentation.
+
+## AWS Setup Guide
+
+### Step 1: Create AWS Account
+
+1. Go to aws.amazon.com
+2. Click "Create an AWS Account"
+3. Provide email and payment info
+4. **Important**: Set up billing alerts immediately!
+
+### Step 2: Set Billing Alerts
+
+Don't skip this! Prevent surprise bills.
+
+1. Go to AWS Billing Dashboard
+2. Click "Billing preferences"
+3. Enable "Receive Billing Alerts"
+4. Set alerts for:
+   - $50 (warning)
+   - $100 (serious warning)
+   - $200 (stop everything!)
+
+### Step 3: Choose Your Instance
+
+AWS offers many GPU instances. Here's what matters for robotics:
+
+#### g5.xlarge ($1.01/hour)
+- **GPU**: NVIDIA A10G (24GB VRAM)
+- **CPU**: 4 vCPUs
+- **RAM**: 16GB
+- **Best for**: Light development, testing
+
+#### g5.2xlarge ($1.21/hour) - **Recommended**
+- **GPU**: NVIDIA A10G (24GB VRAM)
+- **CPU**: 8 vCPUs
+- **RAM**: 32GB
+- **Best for**: Development, model training
+
+#### g6.xlarge ($0.94/hour)
+- **GPU**: NVIDIA L4 (24GB VRAM)
+- **CPU**: 4 vCPUs
+- **RAM**: 16GB
+- **Best for**: Budget-conscious development
+
+**Monthly cost estimate** (4 hours/day, 5 days/week): ~$100
+
+### Step 4: Launch Instance
+
+1. Go to EC2 Dashboard
+2. Click "Launch Instance"
+3. Choose "Deep Learning AMI (Ubuntu 22.04)"
+4. Select instance type (g5.2xlarge recommended)
+5. Configure storage: 100GB minimum
+6. Configure security group:
+   - Allow SSH (port 22) from your IP
+   - Allow Custom TCP (port 5901) for VNC
+7. Create/select key pair
+8. Click "Launch"
+
+Wait 2-3 minutes for instance to start.
+
+### Step 5: Connect via SSH
 
 ```bash
-# Use Deep Learning AMI (Ubuntu 22.04)
-# Configure security groups for SSH and VNC
+# Download your key pair (yourkey.pem)
+chmod 400 yourkey.pem
+
+# Connect to instance
+ssh -i yourkey.pem ubuntu@<your-instance-ip>
 ```
 
-## Remote Development
+Replace `<your-instance-ip>` with your actual instance IP from AWS console.
 
-### VS Code Remote SSH
+## Setting Up Development Environment
+
+### Install ROS 2 Humble
 
 ```bash
-# Install VS Code extension: Remote - SSH
-# Connect to your instance
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Add ROS 2 repository
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# Install ROS 2
+sudo apt update
+sudo apt install ros-humble-desktop -y
+
+# Source ROS 2
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-### VNC for GUI Applications
+### Install Gazebo
 
 ```bash
-# Install TigerVNC on instance
-sudo apt install tigervnc-standalone-server tigervnc-common
+# Install Gazebo Harmonic
+sudo apt install ros-humble-ros-gz -y
+```
+
+### Install Development Tools
+
+```bash
+# Install Python tools
+pip install numpy scipy matplotlib
+
+# Install ROS 2 tools
+sudo apt install python3-colcon-common-extensions -y
+```
+
+## Remote Development Setup
+
+### Option 1: VS Code Remote SSH (Recommended)
+
+VS Code makes cloud development feel local.
+
+**On your local machine**:
+
+1. Install VS Code
+2. Install "Remote - SSH" extension
+3. Press F1, type "Remote-SSH: Connect to Host"
+4. Enter: `ubuntu@<your-instance-ip>`
+5. Select your key file when prompted
+
+Now you can edit code as if it's local!
+
+### Option 2: VNC for GUI Applications
+
+Some tools need GUI (like RViz). Use VNC:
+
+**On cloud instance**:
+
+```bash
+# Install VNC server
+sudo apt install tigervnc-standalone-server tigervnc-common -y
+
+# Set VNC password
+vncpasswd
 
 # Start VNC server
 vncserver :1 -geometry 1920x1080 -depth 24
 ```
 
-## ROS 2 + Gazebo in Cloud
-
-Run simulations remotely:
+**On your local machine**:
 
 ```bash
-# Launch Gazebo in headless mode
-LIBGL_ALWAYS_SOFTWARE=1 gz sim --headless-rendering
+# Create SSH tunnel
+ssh -L 5901:localhost:5901 -i yourkey.pem ubuntu@<your-instance-ip>
+
+# Connect with VNC viewer to localhost:5901
 ```
 
-## Cost Optimization
+Use any VNC client (RealVNC, TigerVNC Viewer, etc.).
 
-- Use Spot Instances (up to 70% savings)
-- Stop instances when not in use
-- Use S3 for data storage
-- Set billing alerts
+### Example 2: Choosing Your Development Method
 
-## Limitations
+**Type**: Decision Guide
 
-- Network latency for interactive work
-- Cannot deploy to physical robots directly
-- Bandwidth costs for large data transfers
+**Context**: You're not sure whether to use VS Code Remote or VNC.
+
+**Explanation**:
+- **For code editing and terminal work**: Use VS Code Remote. It's faster and feels native.
+- **For GUI tools (RViz, Gazebo GUI)**: Use VNC. GUI needs graphical display.
+- **Best approach**: Use both! VS Code for code, VNC for visualization.
+
+**Takeaway**: Different tools for different needs. Use the right tool for each task.
+
+## Running Simulations in Cloud
+
+### Headless Gazebo
+
+Gazebo can run without GUI:
+
+```bash
+# Set environment for software rendering
+export LIBGL_ALWAYS_SOFTWARE=1
+
+# Launch Gazebo headless
+gz sim --headless-rendering your_world.sdf
+```
+
+This uses CPU rendering. Slower but works without display.
+
+### GPU-Accelerated Rendering
+
+For better performance:
+
+```bash
+# Use VNC session
+# Inside VNC, run:
+gz sim your_world.sdf
+```
+
+GUI shows in VNC window. GPU accelerates rendering.
+
+### RViz Visualization
+
+```bash
+# In VNC session
+ros2 run rviz2 rviz2
+```
+
+RViz appears in your VNC window.
+
+## Training Models in Cloud
+
+Cloud GPUs are powerful. Use them for training:
+
+```bash
+# Example: Training a perception model
+python train_model.py --batch-size 32 --epochs 100
+
+# GPU will be used automatically
+# Monitor with: nvidia-smi
+```
+
+Check GPU usage:
+
+```bash
+watch -n 1 nvidia-smi
+```
+
+This shows GPU memory, utilization, and temperature.
+
+## Cost Optimization Strategies
+
+### 1. Use Spot Instances
+
+Spot instances cost 70% less! But AWS can terminate them.
+
+**When to use spots**:
+- Long training jobs (save checkpoints!)
+- Experimentation
+- Non-urgent work
+
+**When NOT to use spots**:
+- Demos or presentations
+- Critical deadlines
+
+### 2. Stop Instances When Done
+
+**Critical**: Stop instance after work!
+
+```bash
+# Before logging off
+sudo poweroff
+```
+
+Or use AWS console: Instance → Actions → Stop
+
+**Cost comparison**:
+- Running 24/7: $730/month (g5.2xlarge)
+- Running 4 hours/day: $97/month
+- **Savings**: $633/month!
+
+### 3. Use AWS Savings Plans
+
+If you'll use cloud long-term:
+- Commit to $X/month usage
+- Get 20-40% discount
+- Flexible across instance types
+
+### 4. Delete Unused Resources
+
+Delete:
+- Old snapshots
+- Unused volumes (storage)
+- Stopped instances you don't need
+
+Check monthly: AWS → Cost Explorer
+
+## Transferring Data
+
+### To Cloud
+
+```bash
+# From your local machine
+scp -i yourkey.pem your_data.tar.gz ubuntu@<instance-ip>:~/
+```
+
+### From Cloud
+
+```bash
+# To your local machine
+scp -i yourkey.pem ubuntu@<instance-ip>:~/results.tar.gz ./
+```
+
+### Large Files
+
+Use S3 for storage:
+
+```bash
+# Install AWS CLI
+sudo apt install awscli -y
+
+# Upload to S3
+aws s3 cp large_file.tar.gz s3://your-bucket/
+
+# Download from S3
+aws s3 cp s3://your-bucket/large_file.tar.gz ./
+```
+
+S3 costs ~$0.023/GB/month. Much cheaper than EBS volumes.
+
+## Limitations and Solutions
+
+### Limitation 1: Network Latency
+
+**Problem**: VNC feels laggy.
+
+**Solution**: Use VS Code Remote for code. Only use VNC when needed.
+
+### Limitation 2: Can't Control Physical Robots
+
+**Problem**: Cloud can't directly connect to your local robot.
+
+**Solution**: Develop in cloud. Deploy to local Jetson. Test on physical robot locally.
+
+### Limitation 3: Bandwidth Costs
+
+**Problem**: Large dataset transfers cost money.
+
+**Solution**: Keep datasets in S3. Don't download/upload repeatedly.
+
+### Limitation 4: Session Disconnects
+
+**Problem**: SSH disconnects when laptop sleeps.
+
+**Solution**: Use `tmux` or `screen` for persistent sessions:
+
+```bash
+# Start tmux session
+tmux new -s mysession
+
+# Your work here...
+
+# Detach: Ctrl+B, then D
+# Reconnect: tmux attach -t mysession
+```
+
+## Security Best Practices
+
+### 1. Restrict SSH Access
+
+Only allow SSH from your IP:
+
+In Security Group:
+- Type: SSH
+- Source: My IP (not 0.0.0.0/0!)
+
+### 2. Use Key-Based Auth Only
+
+Never use password authentication. AWS uses keys by default. Keep it that way.
+
+### 3. Update Regularly
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+Do this weekly.
+
+### 4. Monitor Costs Daily
+
+Check AWS Billing Dashboard daily. Catch problems early.
+
+## Alternative Cloud Providers
+
+### Lambda Labs
+
+- **Price**: $0.60-$1.10/hour
+- **Pros**: Simpler than AWS, cheaper
+- **Cons**: Limited availability
+
+### Google Cloud Platform (GCP)
+
+- **Price**: Similar to AWS
+- **Pros**: Good AI/ML tools
+- **Cons**: More complex setup
+
+### Paperspace
+
+- **Price**: $0.51/hour+
+- **Pros**: Simpler interface
+- **Cons**: Fewer GPU options
+
+## Common Issues
+
+### Issue 1: "No Space Left on Device"
+
+**Problem**: Ran out of disk space.
+
+**Solution**: Increase EBS volume size in AWS console.
+
+### Issue 2: Can't Connect to VNC
+
+**Problem**: VNC connection refused.
+
+**Solution**: Check security group allows port 5901. Check VNC server is running.
+
+### Issue 3: Unexpected High Bill
+
+**Problem**: Forgot to stop instance!
+
+**Solution**: Set up billing alerts. Stop instances immediately. Request AWS billing support.
+
+## Summary
+
+- **Cloud enables** zero-hardware robotics development
+- **AWS g5 instances** are perfect for ROS 2 and AI
+- **VS Code Remote** for code, **VNC** for GU I
+- **Stop instances** when not in use (critical!)
+- **Set billing alerts** before starting
+- **Spot instances** save 70% for training
+- **Cloud is ideal** for learning, testing, and training
 
 ## Next Steps
 
-- Set up development environment
-- Run simulations in cloud
-- Train models with cloud GPUs
-- Deploy to edge devices when ready
+Ready to set up your local environment too?
+
+**Continue to**: [Dev Container & Docker Setup](./devcontainer-docker-setup.mdx)
+
+**Related topics**:
+- [Hardware Guide](./hardware-guide.mdx)
+- [Jetson BOM](./jetson-bom.mdx)
+- [Troubleshooting FAQ](./troubleshooting-faq.mdx)

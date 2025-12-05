@@ -1,0 +1,218 @@
+# 1.1 Nodes - The Building Blocks
+
+**Estimated Reading Time**: 8 minutes
+**Prerequisites**: Chapter 1 Introduction
+**Difficulty**: Beginner
+
+## Introduction
+
+A node is a single program. It does one specific job. Nodes are the fundamental units in ROS 2.
+
+Think of nodes as workers in a factory. Each worker has one job. They work together. The factory runs smoothly.
+
+## What Makes a Good Node?
+
+**Single Purpose**: Each node should do one thing well. Don't create a node that does everything.
+
+**Examples of good nodes:**
+- Camera driver (publishes images)
+- Object detector (finds objects in images)
+- Motor controller (moves robot joints)
+
+**Bad node example:**
+- One node that handles camera, detects objects, AND moves motors
+
+## Why Multiple Nodes?
+
+You might wonder why not put everything in one program.
+
+**Modularity**: You can replace one node. You don't change others. Switch cameras? Just replace the camera node.
+
+**Parallel Processing**: Multiple nodes run at the same time. Your robot can see, think, and move at once.
+
+**Fault Isolation**: If one node crashes, others keep running. The robot keeps working.
+
+### Example 1: The Restaurant Kitchen Analogy
+
+**Type**: Analogy
+
+**Context**: Imagine a restaurant kitchen. You have chefs. You have waiters. You have customers. They need to communicate.
+
+**Explanation**: Each person is like a node. The chef cooks. The waiter serves. The cashier handles payment. Each does one job well. If the chef leaves, a new chef can replace them. The waiter doesn't change. The restaurant keeps running.
+
+**Takeaway**: Nodes provide modularity. Each component is independent. The system is robust.
+
+## Creating a Simple Node
+
+Here's the simplest possible node:
+
+```python title="simple_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class SimpleNode(Node):
+    def __init__(self):
+        super().__init__('simple_node')
+        self.get_logger().info('Simple node is running!')
+
+def main():
+    rclpy.init()
+    node = SimpleNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+This node doesn't do much. It just logs a message. But it's complete and runnable.
+
+### Code Walkthrough
+
+**Line by line**:
+
+1. `import rclpy` - Import the ROS 2 Python client library
+2. `from rclpy.node import Node` - Import the base Node class
+3. `class SimpleNode(Node)` - Create our node class
+4. `super().__init__('simple_node')` - Initialize with a name
+5. `self.get_logger().info(...)` - Log a message
+6. `rclpy.init()` - Initialize the ROS 2 system
+7. `rclpy.spin(node)` - Keep the node running
+8. `node.destroy_node()` - Clean up
+9. `rclpy.shutdown()` - Shut down ROS 2
+
+### Running the Node
+
+Save the file. Then run it:
+
+```bash
+python3 simple_node.py
+```
+
+You'll see:
+```
+[INFO] [simple_node]: Simple node is running!
+```
+
+The node runs. It stays alive. Press Ctrl+C to stop it.
+
+## Node Naming
+
+Every node needs a unique name. This name identifies it in the ROS 2 system.
+
+```python
+super().__init__('simple_node')  # Name is 'simple_node'
+```
+
+**Naming rules**:
+- Use lowercase letters
+- Use underscores for spaces
+- Make names descriptive
+- Avoid special characters
+
+**Good names**: `camera_driver`, `object_detector`, `motor_controller`
+**Bad names**: `node1`, `MyNode`, `n`
+
+## Node Lifecycle
+
+A node has a lifecycle:
+
+1. **Initialize**: `rclpy.init()` sets up ROS 2
+2. **Create**: `SimpleNode()` creates the node
+3. **Spin**: `rclpy.spin()` keeps it running
+4. **Destroy**: `destroy_node()` cleans up
+5. **Shutdown**: `rclpy.shutdown()` stops ROS 2
+
+Always follow this pattern. It ensures proper cleanup.
+
+### Example 2: Node Lifecycle in Real Robots
+
+**Type**: Scenario
+
+**Context**: Your humanoid robot starts up. Multiple nodes need to initialize.
+
+**Explanation**: The robot boots. First, the camera node initializes. Then the IMU node. Then the motor controller. Each follows the same lifecycle. Initialize. Create. Spin. If you power down, each calls destroy and shutdown. This ensures clean exits. No corrupted data. No stuck processes.
+
+**Takeaway**: Following the lifecycle pattern ensures reliable robot operation.
+
+## Checking Running Nodes
+
+You can list all running nodes:
+
+```bash
+ros2 node list
+```
+
+This shows all active nodes in your system.
+
+For detailed information about a specific node:
+
+```bash
+ros2 node info /simple_node
+```
+
+This displays:
+- Subscribers
+- Publishers
+- Services
+- Actions
+
+## Common Mistakes
+
+### Mistake 1: Forgetting to Call `spin()`
+
+```python
+# Wrong - node exits immediately
+def main():
+    rclpy.init()
+    node = SimpleNode()
+    # Missing: rclpy.spin(node)
+    node.destroy_node()
+```
+
+The node starts. Then it exits immediately. You must call `spin()` to keep it alive.
+
+### Mistake 2: Not Cleaning Up
+
+```python
+# Wrong - no cleanup
+def main():
+    rclpy.init()
+    node = SimpleNode()
+    rclpy.spin(node)
+    # Missing: destroy_node() and shutdown()
+```
+
+Always clean up. Call `destroy_node()`. Call `shutdown()`. This prevents resource leaks.
+
+### Mistake 3: Duplicate Node Names
+
+Running two nodes with the same name causes conflicts. Each node needs a unique name.
+
+## Summary
+
+- Nodes are independent programs that do one specific job
+- Each node has a unique name
+- Nodes follow a lifecycle: init, create, spin, destroy, shutdown
+- Multiple nodes enable modularity, parallelism, and fault isolation
+- Keep nodes simple and focused
+
+## Next Steps
+
+Now you understand nodes. Next, learn how nodes communicate using topics.
+
+**Continue to**: [1.2 Topics - Streaming Data](./1.2-topics.mdx)
+
+**Related topics**:
+- [Chapter 1 Overview](./index.mdx)
+- [Chapter 2: Python Development](../chapter2-python-rclpy/index.mdx)
+
+**Try it yourself**:
+1. Create a node that prints your name
+2. Run it and verify it appears in `ros2 node list`
+3. Check its info with `ros2 node info`

@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Physical AI & Humanoid Robotics Book',
   tagline: 'Embodied Intelligence with ROS 2, Isaac Sim, and Vision-Language-Action Models',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.ic',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -67,6 +67,19 @@ const config: Config = {
     ],
   ],
 
+  themes: [
+    [
+      require.resolve("@easyops-cn/docusaurus-search-local"),
+      {
+        hashed: true,
+        language: ["en"],
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+        docsRouteBasePath: "/docs",
+      },
+    ],
+  ],
+
   themeConfig: {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
@@ -75,10 +88,6 @@ const config: Config = {
     },
     navbar: {
       title: 'Physical AI & Humanoid Robotics',
-      logo: {
-        alt: 'Physical AI & Humanoid Robotics Logo',
-        src: 'img/logo.svg',
-      },
       items: [
         {
           type: 'docSidebar',
@@ -88,7 +97,7 @@ const config: Config = {
         },
         // {to: '/blog', label: 'Blog', position: 'left'}, // Removed as per plan
         {
-          href: 'https://github.com/facebook/docusaurus', // Consider updating this to your repo
+          href: 'https://github.com/ABIHAAHEMD4262/Humanoid-Robotics-Book',
           label: 'GitHub',
           position: 'right',
         },
@@ -98,11 +107,40 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Content',
           items: [
             {
-              label: 'Book',
+              label: 'Introduction',
               to: '/docs/intro',
+            },
+            {
+              label: 'Module 1: ROS 2',
+              to: '/docs/module1-ros2/',
+            },
+            {
+              label: 'Module 2: Digital Twin',
+              to: '/docs/module2-digital-twin/',
+            },
+            {
+              label: 'Appendices',
+              to: '/docs/appendices/',
+            },
+          ],
+        },
+        {
+          title: 'Resources',
+          items: [
+            {
+              label: 'Hardware Guide',
+              to: '/docs/appendices/hardware-guide',
+            },
+            {
+              label: 'DevContainer Setup',
+              to: '/docs/appendices/devcontainer-docker-setup',
+            },
+            {
+              label: 'Cloud Path',
+              to: '/docs/appendices/cloud-path',
             },
           ],
         },
@@ -110,34 +148,38 @@ const config: Config = {
           title: 'Community',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'GitHub Discussions',
+              href: 'https://github.com/ABIHAAHEMD4262/Humanoid-Robotics-Book/discussions',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: 'Report Issues',
+              href: 'https://github.com/ABIHAAHEMD4262/Humanoid-Robotics-Book/issues',
             },
             {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Contribute',
+              href: 'https://github.com/ABIHAAHEMD4262/Humanoid-Robotics-Book',
             },
           ],
         },
         {
-          title: 'More',
+          title: 'External',
           items: [
-            // {
-            //   label: 'Blog', // Removed as per plan
-            //   to: '/blog',
-            // },
             {
-              label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus', // Consider updating this to your repo
+              label: 'ROS 2 Documentation',
+              href: 'https://docs.ros.org/en/humble/',
+            },
+            {
+              label: 'NVIDIA Isaac',
+              href: 'https://developer.nvidia.com/isaac-sim',
+            },
+            {
+              label: 'Gazebo',
+              href: 'https://gazebosim.org/',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Physical AI & Humanoid Robotics Book. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Physical AI & Humanoid Robotics Book. Built with ❤️ and Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

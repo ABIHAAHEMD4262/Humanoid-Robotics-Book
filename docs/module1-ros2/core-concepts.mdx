@@ -1,18 +1,441 @@
-# ROS 2 Core Concepts, Nodes, Topics, Services, Actions
+# ROS 2 Core Concepts: Nodes, Topics, Services, Actions
 
-Master the fundamental building blocks of ROS 2.
+**Estimated Reading Time**: 15 minutes
+**Prerequisites**: Module 1 Introduction
+**Difficulty**: Beginner
 
-## Nodes
-Processes that perform computation.
+## Introduction
 
-## Topics
-Asynchronous publish-subscribe communication.
+ROS 2 has four building blocks. Nodes. Topics. Services. Actions. You need to understand these.
 
-## Services
-Synchronous request-response communication.
+Think of these as vocabulary. They let robots talk. You can build any robot application.
 
-## Actions
-Long-running tasks with feedback.
+You'll understand robot communication. You'll know when to use each method.
 
-## Hands-On Examples
-Code examples for each concept.
+## The Big Picture
+
+Before diving into details, let's see how everything fits together.
+
+A robot system has many parts. The camera sees the world. Motors move the robot. The brain makes decisions. Each part is a node.
+
+Nodes talk to each other using three methods:
+- **Topics**: For streaming data (like sensor readings)
+- **Services**: For quick requests (like "what's the battery level?")
+- **Actions**: For long tasks (like "navigate to the kitchen")
+
+### Example 1: A Restaurant Analogy
+
+**Type**: Analogy
+
+**Context**: Imagine a restaurant kitchen. You have chefs. You have waiters. You have customers. They need to communicate.
+
+**Explanation**:
+- **Topics** are like the order board. The waiter posts orders. Any chef can see them. Multiple chefs work on different parts. No one waits for confirmation.
+- **Services** are like asking for the bill. You ask. The cashier calculates. You wait. You get an answer.
+- **Actions** are like ordering food. You place an order. The kitchen gives you updates. You can cancel. Finally, you get your meal.
+
+**Takeaway**: Different communication needs require different patterns. ROS 2 provides all three.
+
+## Nodes: The Building Blocks
+
+A node is a single program. It does one specific job. Nodes are the fundamental units in ROS 2.
+
+### What Makes a Good Node?
+
+**Single Purpose**: Each node should do one thing well. Don't create a node that does everything.
+
+**Examples of good nodes:**
+- Camera driver (publishes images)
+- Object detector (finds objects in images)
+- Motor controller (moves robot joints)
+
+**Bad node example:**
+- One node that handles camera, detects objects, AND moves motors
+
+### Why Multiple Nodes?
+
+You might wonder why not put everything in one program.
+
+**Modularity**: You can replace one node. You don't change others. Switch cameras? Just replace the camera node.
+
+**Parallel Processing**: Multiple nodes run at the same time. Your robot can see, think, and move at once.
+
+**Fault Isolation**: If one node crashes, others keep running. The robot keeps working.
+
+### Creating a Simple Node
+
+Here's the simplest possible node:
+
+```python title="simple_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class SimpleNode(Node):
+    def __init__(self):
+        super().__init__('simple_node')
+        self.get_logger().info('Simple node is running!')
+
+def main():
+    rclpy.init()
+    node = SimpleNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+This node doesn't do much. It just logs a message. But it's complete and runnable.
+
+## Topics: Streaming Data
+
+Topics are for continuous data streams. Think sensor data, robot state, or camera images.
+
+### How Topics Work
+
+**Publishers** send data to a topic.
+
+**Subscribers** receive data from a topic.
+
+Many publishers can write to one topic. Many subscribers can read from it. They are independent.
+
+### When to Use Topics
+
+Use topics for:
+- Sensor data (camera images, laser scans)
+- Robot state (joint positions, velocities)
+- Continuous monitoring (battery level, temperature)
+
+### Publisher Example
+
+```python title="temperature_publisher.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class TemperaturePublisher(Node):
+    def __init__(self):
+        super().__init__('temperature_publisher')
+
+        # Create publisher
+        self.publisher = self.create_publisher(Float32, 'temperature', 10)
+
+        # Publish every 1 second
+        self.timer = self.create_timer(1.0, self.publish_temperature)
+
+        self.temperature = 25.0
+
+    def publish_temperature(self):
+        msg = Float32()
+        msg.data = self.temperature
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Publishing: {msg.data}°C')
+
+        # Simulate temperature change
+        self.temperature += 0.1
+
+def main():
+    rclpy.init()
+    node = TemperaturePublisher()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Subscriber Example
+
+```python title="temperature_subscriber.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class TemperatureSubscriber(Node):
+    def __init__(self):
+        super().__init__('temperature_subscriber')
+
+        # Create subscriber
+        self.subscription = self.create_subscription(
+            Float32,
+            'temperature',
+            self.temperature_callback,
+            10
+        )
+
+    def temperature_callback(self, msg):
+        self.get_logger().info(f'Received: {msg.data}°C')
+
+        # React to high temperature
+        if msg.data > 30.0:
+            self.get_logger().warn('Temperature is too high!')
+
+def main():
+    rclpy.init()
+    node = TemperatureSubscriber()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Example 2: Understanding Topic Communication
+
+**Type**: Scenario
+
+**Context**: You have a robot with multiple temperature sensors. You want to log all temperatures and sound an alarm if any gets too hot.
+
+**Explanation**: Create one publisher node per sensor. Each publishes to the `temperature` topic. Create one subscriber node. It monitors the topic. It receives data from all sensors. The sensors don't know about the monitor. The monitor doesn't know how many sensors exist. This is loose coupling. You can add sensors. You can remove sensors. No code changes needed.
+
+**Takeaway**: Topics enable flexible, scalable communication. Nodes remain independent.
+
+## Services: Request-Response
+
+Services are for one-time requests that need a reply. Think "what's your battery level?" or "add these two numbers."
+
+### How Services Work
+
+**Service Server** waits for requests. When one arrives, it processes it. Then it sends a response.
+
+**Service Client** sends a request. It waits for the response.
+
+Unlike topics, services are synchronous. The client must wait for the answer.
+
+### When to Use Services
+
+Use services for:
+- Queries (get current state)
+- Commands that complete quickly (turn on LED)
+- Calculations (inverse kinematics)
+
+Don't use services for long-running tasks. Use actions instead.
+
+### Service Server Example
+
+```python title="add_two_ints_server.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from example_interfaces.srv import AddTwoInts
+
+class AddTwoIntsServer(Node):
+    def __init__(self):
+        super().__init__('add_two_ints_server')
+
+        # Create service
+        self.srv = self.create_service(
+            AddTwoInts,
+            'add_two_ints',
+            self.add_two_ints_callback
+        )
+
+        self.get_logger().info('Add Two Ints Server ready')
+
+    def add_two_ints_callback(self, request, response):
+        response.sum = request.a + request.b
+        self.get_logger().info(f'Request: {request.a} + {request.b} = {response.sum}')
+        return response
+
+def main():
+    rclpy.init()
+    node = AddTwoIntsServer()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Service Client Example
+
+```python title="add_two_ints_client.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from example_interfaces.srv import AddTwoInts
+
+class AddTwoIntsClient(Node):
+    def __init__(self):
+        super().__init__('add_two_ints_client')
+
+        # Create client
+        self.client = self.create_client(AddTwoInts, 'add_two_ints')
+
+        # Wait for service to be available
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for service...')
+
+        self.get_logger().info('Service available')
+
+    def send_request(self, a, b):
+        request = AddTwoInts.Request()
+        request.a = a
+        request.b = b
+
+        # Send request
+        future = self.client.call_async(request)
+        return future
+
+def main():
+    rclpy.init()
+    node = AddTwoIntsClient()
+
+    # Send request
+    future = node.send_request(5, 7)
+
+    # Wait for response
+    rclpy.spin_until_future_complete(node, future)
+
+    if future.result() is not None:
+        result = future.result()
+        node.get_logger().info(f'Result: {result.sum}')
+    else:
+        node.get_logger().error('Service call failed')
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Actions: Long-Running Tasks
+
+Actions are for tasks that take time and need feedback. Think "navigate to the kitchen" or "pick up the cup."
+
+### How Actions Work
+
+**Action Server** performs the long-running task. It sends feedback updates.
+
+**Action Client** sends a goal. It receives feedback. It can cancel if needed.
+
+### When to Use Actions
+
+Use actions for:
+- Navigation (takes seconds or minutes)
+- Manipulation (pick and place)
+- Any task where you want progress updates
+
+### Action Components
+
+Actions have three parts:
+
+1. **Goal**: What you want to achieve
+2. **Feedback**: Progress updates during execution
+3. **Result**: Final outcome when done
+
+### Why Not Use Services?
+
+Services block while waiting. If navigation takes 2 minutes, your client is stuck. You can't cancel. You don't get updates.
+
+Actions solve this. The client stays responsive. It gets updates. It can cancel.
+
+## Choosing the Right Tool
+
+Here's a quick decision guide:
+
+**Use Topics when:**
+- Data flows continuously
+- You don't need confirmation
+- Multiple listeners might exist
+- Example: Sensor data, robot state
+
+**Use Services when:**
+- You need a reply
+- The task is quick (< 1 second)
+- It's a one-time request
+- Example: Get current position, calculate something
+
+**Use Actions when:**
+- The task takes time (> 1 second)
+- You want progress updates
+- You might need to cancel
+- Example: Navigation, manipulation, long computations
+
+## Putting It All Together
+
+A real robot uses all three:
+
+```text
+Camera Node (Publisher)
+    ↓ [topic: /camera/image]
+Object Detection Node (Subscriber + Publisher)
+    ↓ [topic: /detected_objects]
+Task Planner Node (Subscriber + Action Client)
+    ↓ [action: /navigate_to_object]
+Navigation Node (Action Server + Service Server)
+    ↑ [service: /get_current_pose]
+```
+
+Each node has a clear purpose. They use the right method for each need.
+
+## Testing Your Understanding
+
+Try these exercises:
+
+1. **Create a node** that publishes random numbers every second
+2. **Create a subscriber** that listens and prints those numbers
+3. **Create a service** that returns the square of a number
+4. **Run all three** and verify they work together
+
+## Common Mistakes
+
+### Mistake 1: Using Services for Streams
+
+Don't call a service 100 times per second. Use a topic instead.
+
+### Mistake 2: Using Topics for Requests
+
+If you need a reply, don't use topics. Use a service or action.
+
+### Mistake 3: Blocking in Callbacks
+
+Keep callbacks short. Don't do heavy computation in callbacks. This blocks other operations.
+
+## Summary
+
+- **Nodes** are independent programs that perform specific tasks
+- **Topics** enable streaming data communication (publisher-subscriber)
+- **Services** enable request-response communication (client-server)
+- **Actions** enable long-running tasks with feedback and cancellation
+- Choose the right tool based on your communication needs
+
+## Next Steps
+
+Now you understand the core concepts. Next, you'll learn how to develop with Python and rclpy.
+
+**Continue to**: [Python + rclpy Development](./python-rclpy.mdx)
+
+**Related topics**:
+- [Module 1 Introduction](./index.mdx)
+- [Building & Launching Packages](./ros2-packages.mdx)
+
+**Try it yourself**: Build a simple robot system with 3 nodes:
+1. A sensor node (publishes random data)
+2. A processor node (subscribes, processes, publishes results)
+3. A controller node (subscribes to results, logs them)
+
+This will cement your understanding of topics and nodes.

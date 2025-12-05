@@ -1,0 +1,151 @@
+.hero {
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+}
+
+[data-theme='dark'] .hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.heroContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.heroImage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.robotImage {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  filter: drop-shadow(0 10px 30px rgba(0, 102, 204, 0.3));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.heroContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--ifm-color-emphasis-700);
+  margin: 0;
+}
+
+.heroDescription {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.heroDescription p {
+  margin-bottom: 0.75rem;
+}
+
+.heroDescription ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.heroDescription li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.buttonGroup .button {
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.buttonGroup .button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 102, 204, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 996px) {
+  .heroContainer {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .heroImage {
+    order: -1;
+  }
+
+  .robotImage {
+    max-width: 300px;
+  }
+
+  .heroTitle {
+    font-size: 2.25rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero {
+    padding: 2rem 1rem;
+  }
+
+  .heroTitle {
+    font-size: 1.75rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+
+  .buttonGroup {
+    flex-direction: column;
+  }
+
+  .buttonGroup .button {
+    width: 100%;
+  }
+}

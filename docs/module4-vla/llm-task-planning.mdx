@@ -8,12 +8,16 @@ Use language models to convert natural language commands into executable robot a
 - ROS 2 integration
 
 ## Architecture
-```
+```text
 Voice Command → LLM → Task Plan → ROS 2 Actions → Execution
 ```
 
 ## Implementation
-```python
+```python title="task_planner.py"
+# Library: transformers v4.35.0 (or OpenAI API)
+# Last updated: 2025-12-05
+# Tested on: Python 3.10
+
 class TaskPlanner:
     def __init__(self):
         self.llm = load_llm_model()

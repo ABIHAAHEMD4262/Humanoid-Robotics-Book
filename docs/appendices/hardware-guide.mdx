@@ -1,63 +1,374 @@
 # 2025 Hardware Buyer's Guide
 
-Comprehensive guide to selecting hardware for Physical AI development in 2025.
+**Estimated Reading Time**: 10 minutes
+**Prerequisites**: None
+**Difficulty**: Beginner
+
+## Introduction
+
+Choosing hardware for robotics can be overwhelming. There are many options. Prices range from hundreds to tens of thousands of dollars.
+
+This guide helps you choose the right hardware. It covers three budget tiers. Each tier supports the projects in this book.
+
+By the end, you'll know exactly what to buy. You'll understand what each component does.
+
+## Do You Need Physical Hardware?
+
+The short answer: **Not immediately**.
+
+This book focuses on simulation first. You can complete most projects without buying any hardware. Use your existing computer plus cloud resources.
+
+### When to Buy Hardware
+
+Buy hardware when you:
+- Want to deploy to real robots
+- Need faster inference than cloud provides
+- Want to test real-world sensor data
+- Have completed simulation projects
+
+Start with simulation. Buy hardware later.
+
+### Example 1: Simulation vs. Real Hardware
+
+**Type**: Scenario
+
+**Context**: Maria starts learning robotics. She wonders if she should buy a $10,000 robot first.
+
+**Explanation**: Maria starts with simulation. She learns ROS 2. She builds projects. She tests algorithms. After 3 months, she knows exactly what hardware she needs. She buys a $1,500 Jetson kit. This is smarter than buying expensive hardware upfront. The hardware might not match her needs.
+
+**Takeaway**: Learn in simulation first. Buy hardware when you know what you need.
 
 ## Budget Tiers
 
-### Economy Path ($700-$1500)
-- NVIDIA Jetson Orin Nano Dev Kit
-- USB camera
-- Basic sensors
-- Cloud GPU credits for heavy workloads
+Choose a tier based on your budget and goals.
 
-### Mid-Range Path ($1500-$5000)
-- NVIDIA Jetson AGX Orin
-- Intel RealSense D455
-- Unitree Go2 (quadruped for testing)
-- Desktop workstation with RTX 4070
+### Economy Path ($700-$1,500)
 
-### Professional Path ($5000-$20000)
-- NVIDIA Jetson AGX Orin with 64GB RAM
-- Unitree G1 humanoid robot
-- Workstation with RTX 4090
-- LiDAR sensors
-- High-fidelity cameras
+**Best for**: Students, hobbyists, beginners
 
-## Component Breakdown
+**Core Components**:
+- NVIDIA Jetson Orin Nano Dev Kit ($499)
+- Intel RealSense D435 camera ($179)
+- Basic accessories ($200-$300)
+- Cloud GPU credits for training ($10-20/month)
 
-### Compute Platform
-- Jetson for edge deployment
-- Workstation for development and training
-- Cloud GPUs for heavy simulation
+**What you can do**:
+- Run perception models
+- Test object detection
+- Deploy VLA models
+- Control simulated robots
+
+**Limitations**:
+- Slower training times
+- Limited to smaller models
+- No physical robot
+
+**Total**: $700-$1,500 one-time + $10-20/month for cloud
+
+### Mid-Range Path ($1,500-$5,000)
+
+**Best for**: Serious learners, researchers, small teams
+
+**Core Components**:
+- NVIDIA Jetson AGX Orin ($1,999)
+- Intel RealSense D455 ($329)
+- Desktop with RTX 4070 ($1,200-$1,800)
+- Optional: Unitree Go2 quadruped ($2,700)
+
+**What you can do**:
+- Train medium models locally
+- Run multiple models simultaneously
+- Test on real quadruped robot
+- Faster inference
+
+**Limitations**:
+- Still need cloud for heavy training
+- Quadruped, not humanoid
+
+**Total**: $3,500-$5,000 (without robot) or $6,200-$7,700 (with robot)
+
+### Professional Path ($5,000-$20,000)
+
+**Best for**: Professional developers, companies, research labs
+
+**Core Components**:
+- NVIDIA Jetson AGX Orin 64GB ($2,999)
+- Unitree G1 humanoid ($16,000)
+- Workstation with RTX 4090 ($3,000-$4,000)
+- High-end sensors ($1,000-$2,000)
+
+**What you can do**:
+- Everything
+- Train large models locally
+- Deploy to humanoid robot
+- Production-ready systems
+
+**Total**: $22,000-$28,000
+
+### Example 2: Choosing Your Path
+
+**Type**: Decision Guide
+
+**Context**: You have $2,000 to spend. Should you buy the Economy or Mid-Range path?
+
+**Explanation**:
+- If you're just learning: Buy Economy ($700). Save $1,300 for later upgrades.
+- If you've completed simulation projects: Buy Mid-Range desktop ($1,800). This speeds up development significantly.
+- If you want a real robot: Save more money first. Robots need infrastructure and maintenance.
+
+**Takeaway**: Match hardware to your current skill level, not your aspirations.
+
+## Component Deep Dive
+
+### Compute Platforms
+
+#### NVIDIA Jetson (Edge Deployment)
+
+**Jetson Orin Nano** ($499)
+- 8-core ARM CPU
+- 1024 CUDA cores
+- 8GB RAM
+- 40 TOPS AI performance
+- **Use for**: Final deployment, real-time inference
+
+**Jetson AGX Orin** ($1,999)
+- 12-core ARM CPU
+- 2048 CUDA cores
+- 32GB RAM
+- 275 TOPS AI performance
+- **Use for**: Faster inference, running multiple models
+
+#### Development Workstation
+
+**Why you need one**: Training models, running simulations, development
+
+**Minimum specs**:
+- NVIDIA RTX 4060 or better
+- 16GB RAM (32GB recommended)
+- 500GB SSD
+- Ubuntu 22.04
+
+**Recommended builds**:
+- **Budget** ($1,200): RTX 4060, 16GB RAM, AMD Ryzen 5
+- **Mid-range** ($1,800): RTX 4070, 32GB RAM, AMD Ryzen 7
+- **High-end** ($3,000): RTX 4090, 64GB RAM, AMD Ryzen 9
+
+#### Cloud GPUs
+
+**When to use**: Heavy training, don't want to buy hardware yet
+
+**Options**:
+- **AWS EC2 g5 instances**: $1.00-$5.00/hour
+- **Lambda Labs**: $0.60-$1.10/hour
+- **Google Colab Pro**: $10/month (limited)
+
+**Cost estimate**: $50-$200/month depending on usage
 
 ### Sensors
-- Cameras (RGB, Depth, Stereo)
-- LiDAR (2D/3D)
-- IMU
-- Force/Torque sensors
+
+#### RGB-D Cameras
+
+**Intel RealSense D435** ($179)
+- RGB camera
+- Depth sensing
+- USB 3.0
+- **Best for**: Indoor perception, object detection
+
+**Intel RealSense D455** ($329)
+- Longer range than D435
+- Better for navigation
+- **Best for**: Navigation, mapping
+
+#### LiDAR
+
+**RPLiDAR A1** ($99)
+- 2D scanning
+- 12m range
+- **Best for**: Basic navigation, obstacle detection
+
+**Velodyne Puck Lite** ($4,500)
+- 3D scanning
+- 100m range
+- **Best for**: Outdoor navigation, professional use
+
+#### IMU (Inertial Measurement Unit)
+
+**Adafruit BNO085** ($20)
+- 9-axis IMU
+- I2C interface
+- **Best for**: Balance, orientation tracking
 
 ### Robot Platforms
-- Simulation-only (no physical robot needed)
-- Quadrupeds (Unitree Go2)
-- Humanoids (Unitree G1)
+
+#### Simulation Only ($0)
+
+Start here! No robot needed. Use:
+- Gazebo for physics
+- Isaac Sim for photorealism
+- Unity for HRI testing
+
+#### Quadrupeds
+
+**Unitree Go2** ($2,700)
+- 4 legs
+- 12 joints
+- Easier to balance than humanoids
+- Good for testing algorithms
+
+#### Humanoids
+
+**Unitree G1** ($16,000)
+- Full humanoid form
+- 23+ joints
+- ROS 2 support
+- This is advanced hardware!
 
 ## Recommendations by Use Case
 
-**Student/Hobbyist**: Economy path + cloud GPU
-**Researcher**: Mid-range path
-**Professional/Commercial**: Professional path
+### Student Learning Robotics
+
+**Budget**: $700-$1,500
+
+**Buy**:
+1. Your existing laptop/desktop (use what you have)
+2. Cloud GPU credits ($10/month)
+3. (Optional) Jetson Orin Nano after 3 months ($499)
+
+**Don't buy**: Physical robots yet
+
+### Researcher Testing Algorithms
+
+**Budget**: $3,500-$5,000
+
+**Buy**:
+1. Development workstation with RTX 4070 ($1,800)
+2. Jetson AGX Orin ($1,999)
+3. RealSense D455 ($329)
+4. Cloud GPU credits
+
+**Don't buy**: Physical robot until algorithms work in simulation
+
+### Professional Building Products
+
+**Budget**: $10,000+
+
+**Buy**:
+1. High-end workstation with RTX 4090 ($3,000)
+2. Multiple Jetson boards for testing
+3. Physical robot platform
+4. Professional sensors
 
 ## Where to Buy
 
+### Official Distributors
+
+**NVIDIA Jetson**:
 - NVIDIA Developer Store
-- Unitree Robotics
+- Arrow Electronics
+- Digi-Key
+
+**Intel RealSense**:
+- Intel Store
+- Amazon
 - RobotShop
-- Adafruit (sensors)
+
+**Unitree Robots**:
+- Unitree Robotics (official site)
+- Authorized distributors
+- **Warning**: Verify authenticity, avoid grey market
+
+### Other Components
+
+**Sensors**: Adafruit, SparkFun, RobotShop
+
+**Workstation parts**: Newegg, Amazon, Micro Center
+
+### Buying Tips
+
+1. **Check compatibility**: Ensure ROS 2 support
+2. **Read reviews**: Look for robotics-specific reviews
+3. **Consider warranty**: Robotics is rough on hardware
+4. **Buy incrementally**: Don't buy everything at once
 
 ## Future-Proofing
 
-Consider:
-- GPU compute capability
-- RAM and storage expandability
-- Software ecosystem support
-- Community and documentation
+Technology changes fast. Future-proof your purchases:
+
+### GPU Compute Capability
+
+Buy GPUs with at least:
+- CUDA Compute Capability 8.0+
+- Tensor Cores for AI
+- 8GB+ VRAM minimum
+
+### RAM and Storage
+
+- **RAM**: Buy maximum you can afford
+- **Storage**: Use NVMe SSDs, at least 500GB
+
+### Software Ecosystem
+
+Choose hardware with:
+- Strong ROS 2 support
+- Active community
+- Good documentation
+- Long-term manufacturer support
+
+### Upgradeability
+
+Prefer:
+- Desktop over laptop (easier to upgrade)
+- Standard components (not proprietary)
+- Modular robot platforms
+
+## Common Mistakes
+
+### Mistake 1: Buying Too Much Too Soon
+
+Don't buy a humanoid robot on day one. Learn first.
+
+### Mistake 2: Skipping the Workstation
+
+Some people buy Jetson only. Jetson is for deployment. You need a development machine too.
+
+### Mistake 3: Buying Old Hardware
+
+Don't buy used Jetson TX2 to save money. Old hardware won't run modern models well.
+
+### Mistake 4: Ignoring Power Requirements
+
+Jetson needs proper power supply. Robots need batteries. Budget for these.
+
+## Maintenance and Operating Costs
+
+Hardware has ongoing costs:
+
+**Electricity**: $10-50/month (depending on usage)
+
+**Cloud services**: $10-200/month
+
+**Replacement parts**: $100-500/year
+
+**Software licenses**: Usually free (open source)
+
+Budget 10-20% of hardware cost annually for maintenance.
+
+## Summary
+
+- **Start with simulation** - No hardware needed initially
+- **Economy path** ($700-$1,500) is perfect for learning
+- **Mid-range path** ($1,500-$5,000) for serious development
+- **Professional path** ($5,000+) for production systems
+- **Buy incrementally** as you progress
+- **Prioritize compute** over robots at first
+
+## Next Steps
+
+Ready to set up your development environment?
+
+**Continue to**: [Dev Container & Docker Setup](./devcontainer-docker-setup.mdx)
+
+**Related topics**:
+- [Jetson BOM](./jetson-bom.mdx)
+- [Cloud Path](./cloud-path.mdx)
+- [Troubleshooting FAQ](./troubleshooting-faq.mdx)

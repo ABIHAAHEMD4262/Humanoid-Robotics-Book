@@ -1,0 +1,485 @@
+# 2.4 Timers & Callbacks - Event Handling
+
+**Estimated Reading Time**: 9 minutes
+**Prerequisites**: 2.1-2.3 (all previous Chapter 2 subtopics)
+**Difficulty**: Beginner to Intermediate
+
+## Introduction
+
+Timers enable periodic execution. Callbacks handle events. Together, they make your robot responsive and efficient.
+
+This subtopic shows you advanced callback patterns. Multiple timers. Concurrent execution. Performance considerations.
+
+## Creating Timers
+
+Use `create_timer()` for periodic execution:
+
+```python
+self.timer = self.create_timer(period_seconds, callback_function)
+```
+
+**Parameters**:
+- `period_seconds`: How often to call (e.g., 1.0 = every second)
+- `callback_function`: Function to execute
+
+### Basic Timer Example
+
+```python title="timer_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class TimerNode(Node):
+    def __init__(self):
+        super().__init__('timer_node')
+
+        # Create timer - calls every 1 second
+        self.timer = self.create_timer(1.0, self.timer_callback)
+
+        self.counter = 0
+
+    def timer_callback(self):
+        self.counter += 1
+        self.get_logger().info(f'Timer tick: {self.counter}')
+
+def main():
+    rclpy.init()
+    node = TimerNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+This prints a message every second.
+
+## Multiple Timers
+
+You can have multiple timers with different rates:
+
+```python title="multi_timer_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class MultiTimerNode(Node):
+    def __init__(self):
+        super().__init__('multi_timer_node')
+
+        # Fast timer - 10 Hz (every 0.1 seconds)
+        self.fast_timer = self.create_timer(0.1, self.fast_callback)
+
+        # Slow timer - 0.5 Hz (every 2 seconds)
+        self.slow_timer = self.create_timer(2.0, self.slow_callback)
+
+    def fast_callback(self):
+        self.get_logger().info('Fast callback')
+
+    def slow_callback(self):
+        self.get_logger().info('Slow callback')
+
+def main():
+    rclpy.init()
+    node = MultiTimerNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+Output:
+```
+[INFO] [multi_timer_node]: Fast callback
+[INFO] [multi_timer_node]: Fast callback
+...
+[INFO] [multi_timer_node]: Slow callback
+[INFO] [multi_timer_node]: Fast callback
+...
+```
+
+Both timers run independently.
+
+## Combining Publishers, Subscribers, and Timers
+
+Real nodes use all three:
+
+```python title="complete_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class CompleteNode(Node):
+    def __init__(self):
+        super().__init__('complete_node')
+
+        # Subscriber
+        self.subscription = self.create_subscription(
+            Float32,
+            '/sensors/temperature',
+            self.sensor_callback,
+            10
+        )
+
+        # Publisher
+        self.publisher = self.create_publisher(
+            Float32,
+            '/processed/temperature',
+            10
+        )
+
+        # Timer - processes every 0.5 seconds
+        self.timer = self.create_timer(0.5, self.timer_callback)
+
+        self.latest_temp = None
+        self.temp_sum = 0.0
+        self.temp_count = 0
+
+    def sensor_callback(self, msg):
+        # Store latest reading
+        self.latest_temp = msg.data
+
+        # Accumulate for averaging
+        self.temp_sum += msg.data
+        self.temp_count += 1
+
+        self.get_logger().debug(f'Received: {msg.data:.2f}°C')
+
+    def timer_callback(self):
+        # Process accumulated data
+        if self.temp_count > 0:
+            average = self.temp_sum / self.temp_count
+
+            # Publish average
+            msg = Float32()
+            msg.data = average
+            self.publisher.publish(msg)
+
+            self.get_logger().info(
+                f'Published average: {average:.2f}°C '
+                f'(from {self.temp_count} samples)'
+            )
+
+            # Reset accumulators
+            self.temp_sum = 0.0
+            self.temp_count = 0
+
+def main():
+    rclpy.init()
+    node = CompleteNode()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Example 1: Temperature Averaging Pipeline
+
+**Type**: Scenario
+
+**Context**: Temperature sensors are noisy. You receive readings at 10 Hz. You want to publish averaged values at 2 Hz.
+
+**Explanation**: The subscriber receives every sensor reading. It stores them. The timer runs at 2 Hz. It calculates the average of accumulated readings. It publishes the average. Then it resets. This smooths noisy data. The timer controls the output rate independently of the input rate.
+
+**Takeaway**: Timers enable rate conversion and batch processing.
+
+## Callback Execution Order
+
+All callbacks (timers, subscriptions) share one thread by default.
+
+**Execution rules**:
+1. Callbacks execute one at a time
+2. Order is not guaranteed
+3. Long callbacks block others
+
+### Example 2: Blocking Callback Problem
+
+**Type**: Problem/Solution
+
+**Context**: You have a fast timer (100 Hz) and a slow callback (takes 1 second).
+
+**Explanation**:
+
+**Problem**:
+```python
+def slow_callback(self, msg):
+    time.sleep(1.0)  # Blocks for 1 second!
+    self.process(msg.data)
+
+def fast_callback(self):
+    # Can't run while slow_callback blocks
+    self.quick_task()
+```
+
+The fast timer misses 100 ticks while the slow callback runs.
+
+**Solution**: Don't block in callbacks. Use timers for slow tasks:
+```python
+def slow_callback(self, msg):
+    self.pending_data = msg.data  # Store quickly
+    # Don't process here
+
+def process_timer_callback(self):
+    if self.pending_data:
+        self.process(self.pending_data)  # Process in timer
+        self.pending_data = None
+```
+
+**Takeaway**: Keep all callbacks fast. Use separate timers for slow operations.
+
+## Canceling Timers
+
+You can stop a timer:
+
+```python
+class CancelableTimer(Node):
+    def __init__(self):
+        super().__init__('cancelable_timer')
+
+        self.timer = self.create_timer(1.0, self.timer_callback)
+        self.count = 0
+
+    def timer_callback(self):
+        self.count += 1
+        self.get_logger().info(f'Tick: {self.count}')
+
+        # Cancel after 5 ticks
+        if self.count >= 5:
+            self.timer.cancel()
+            self.get_logger().info('Timer canceled')
+```
+
+The timer stops after 5 executions.
+
+## One-Shot Timers
+
+Create a timer that runs once:
+
+```python
+class OneShotTimer(Node):
+    def __init__(self):
+        super().__init__('oneshot_timer')
+
+        # Run once after 3 seconds
+        self.timer = self.create_timer(3.0, self.delayed_callback)
+
+    def delayed_callback(self):
+        self.get_logger().info('Delayed action executed')
+
+        # Cancel immediately after first execution
+        self.timer.cancel()
+```
+
+This executes once, 3 seconds after node start.
+
+## Callback Groups (Advanced)
+
+By default, callbacks run sequentially. For parallel execution, use callback groups:
+
+```python
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+
+class ParallelNode(Node):
+    def __init__(self):
+        super().__init__('parallel_node')
+
+        # Create callback group
+        self.callback_group = MutuallyExclusiveCallbackGroup()
+
+        # Timer with callback group
+        self.timer = self.create_timer(
+            1.0,
+            self.slow_callback,
+            callback_group=self.callback_group
+        )
+
+    def slow_callback(self):
+        # Can run in parallel with other callbacks
+        time.sleep(5.0)
+        self.get_logger().info('Slow task done')
+
+def main():
+    rclpy.init()
+    node = ParallelNode()
+
+    # Use multi-threaded executor
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
+```
+
+**Use cases**: When you have genuinely independent, slow tasks.
+
+**Caution**: Adds complexity. Only use when necessary.
+
+## Practical Pattern: Heartbeat
+
+Publish a heartbeat to show your node is alive:
+
+```python
+class HeartbeatNode(Node):
+    def __init__(self):
+        super().__init__('heartbeat_node')
+
+        self.publisher = self.create_publisher(
+            String,
+            '/heartbeat',
+            10
+        )
+
+        # Heartbeat every 1 second
+        self.timer = self.create_timer(1.0, self.heartbeat_callback)
+
+    def heartbeat_callback(self):
+        msg = String()
+        msg.data = f'Node {self.get_name()} alive'
+        self.publisher.publish(msg)
+```
+
+Other nodes can monitor the heartbeat to detect failures.
+
+## Checking Timer Performance
+
+Monitor if timers run on time:
+
+```python
+class TimerMonitor(Node):
+    def __init__(self):
+        super().__init__('timer_monitor')
+
+        self.timer = self.create_timer(0.01, self.fast_callback)  # 100 Hz
+        self.last_time = self.get_clock().now()
+
+    def fast_callback(self):
+        current_time = self.get_clock().now()
+        elapsed = (current_time - self.last_time).nanoseconds / 1e9
+
+        if elapsed > 0.015:  # More than 15ms (should be 10ms)
+            self.get_logger().warn(f'Timer late: {elapsed:.3f}s')
+
+        self.last_time = current_time
+```
+
+This detects if your callbacks are too slow.
+
+## Common Mistakes
+
+### Mistake 1: Not Storing Timer
+
+```python
+# Wrong - timer gets garbage collected
+def __init__(self):
+    self.create_timer(1.0, self.callback)  # Lost!
+```
+
+Always store it:
+```python
+# Correct
+def __init__(self):
+    self.timer = self.create_timer(1.0, self.callback)
+```
+
+### Mistake 2: Creating Timers in Callbacks
+
+```python
+# Bad - creates new timer every callback
+def callback(self):
+    self.create_timer(1.0, self.another_callback)  # Don't!
+```
+
+Create timers in `__init__` only.
+
+### Mistake 3: Expecting Exact Timing
+
+```python
+# Unrealistic expectation
+self.timer = self.create_timer(0.001, self.callback)  # 1000 Hz
+# May not achieve exact 1000 Hz due to system load
+```
+
+Timers are best-effort. System load affects precision.
+
+## Best Practices
+
+### 1. Choose Appropriate Rates
+
+```python
+# Good - reasonable rates
+sensor_timer = self.create_timer(0.01, self.sensor_callback)  # 100 Hz
+status_timer = self.create_timer(1.0, self.status_callback)   # 1 Hz
+```
+
+### 2. Keep Callbacks Fast
+
+```python
+# Good - quick operations
+def timer_callback(self):
+    self.counter += 1
+    self.publish_data()  # Fast
+```
+
+### 3. Log Timer Creation
+
+```python
+def __init__(self):
+    super().__init__('my_node')
+    self.timer = self.create_timer(1.0, self.callback)
+    self.get_logger().info('Timer created: 1 Hz')
+```
+
+## Summary
+
+- Timers enable periodic execution with `create_timer()`
+- Multiple timers can run at different rates
+- Callbacks execute sequentially by default (one at a time)
+- Keep callbacks short to avoid blocking other operations
+- Store timer references to prevent garbage collection
+- Timers can be canceled with `timer.cancel()`
+- Use callback groups for parallel execution (advanced)
+
+## Next Steps
+
+You've completed Chapter 2! You can create nodes, publishers, subscribers, and timers in Python. Next, learn how to organize your code into ROS 2 packages.
+
+**Continue to**: [Module 1 Overview](../index.mdx)
+
+**Related topics**:
+- [2.1 rclpy Basics](./2.1-rclpy-basics.mdx)
+- [2.2 Publishers](./2.2-publishers.mdx)
+- [2.3 Subscribers](./2.3-subscribers.mdx)
+- [Chapter 2 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a node with 3 timers at different rates (1 Hz, 5 Hz, 10 Hz)
+2. Create a node that combines subscription, publishing, and a timer
+3. Monitor timer performance and log if callbacks are slow
+4. Experiment with canceling timers after a condition is met

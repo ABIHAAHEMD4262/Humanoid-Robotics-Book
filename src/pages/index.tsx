@@ -1,42 +1,21 @@
 import type {ReactNode} from 'react';
-import clsx from 'clsx';
-import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
-import Heading from '@theme/Heading';
 
-import styles from './index.module.css';
-
-function HomepageHeader() {
-  const {siteConfig} = useDocusaurusContext();
-  return (
-    <header className={clsx('hero hero--primary', styles.heroBanner)}>
-      <div className="container">
-        <Heading as="h1" className="hero__title">
-          {siteConfig.title}
-        </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
-        <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/intro">
-            Read the Book
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
+import HomepageHero from '@site/src/components/HomepageHero';
+import ModuleGrid from '@site/src/components/ModuleGrid';
+import BookFeatures from '@site/src/components/BookFeatures';
 
 export default function Home(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
       title={`Welcome to ${siteConfig.title}`}
-      description="A comprehensive guide to Physical AI & Humanoid Robotics.">
-      <HomepageHeader />
+      description="A comprehensive guide to Physical AI & Humanoid Robotics with ROS 2, Isaac Sim, and Vision-Language-Action Models.">
+      <HomepageHero />
       <main>
-        {/* Add any additional content for the landing page here */}
+        <ModuleGrid />
+        <BookFeatures />
       </main>
     </Layout>
   );

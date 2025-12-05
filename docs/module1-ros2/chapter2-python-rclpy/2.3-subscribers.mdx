@@ -1,0 +1,470 @@
+# 2.3 Subscribers - Receiving Data
+
+**Estimated Reading Time**: 8 minutes
+**Prerequisites**: 2.1 rclpy Basics, 2.2 Publishers
+**Difficulty**: Beginner
+
+## Introduction
+
+Subscribers receive data from topics. You learned the concept in Chapter 1. Now learn the implementation.
+
+This subtopic shows you how to create subscribers in Python. You'll learn callback patterns. Message handling. Efficient data processing.
+
+## Creating a Subscriber
+
+Use `create_subscription()` to make a subscriber:
+
+```python
+self.subscription = self.create_subscription(
+    MessageType,
+    'topic_name',
+    callback_function,
+    queue_size
+)
+```
+
+**Parameters**:
+- `MessageType`: The type of message to receive
+- `'topic_name'`: The topic to subscribe to
+- `callback_function`: Function to call when message arrives
+- `queue_size`: How many messages to buffer (usually 10)
+
+### Simple Subscriber Example
+
+```python title="simple_subscriber.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class SimpleSubscriber(Node):
+    def __init__(self):
+        super().__init__('simple_subscriber')
+
+        self.subscription = self.create_subscription(
+            String,
+            'robot_status',
+            self.listener_callback,
+            10
+        )
+
+        self.get_logger().info('Subscriber ready')
+
+    def listener_callback(self, msg):
+        self.get_logger().info(f'Received: {msg.data}')
+
+def main():
+    rclpy.init()
+    node = SimpleSubscriber()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Code Breakdown
+
+**Key lines**:
+
+1. `self.create_subscription(...)` - Create subscriber
+   - Must match publisher's message type
+   - Must match publisher's topic name
+
+2. `self.listener_callback` - Pass function reference
+   - Don't call it (`listener_callback()`)
+   - Just pass the name (`listener_callback`)
+
+3. `def listener_callback(self, msg)` - Callback function
+   - Called automatically when data arrives
+   - `msg`: The received message
+   - Access message data via `msg.data`, `msg.x`, etc.
+
+## Testing Publisher and Subscriber Together
+
+**Terminal 1** - Run subscriber:
+```bash
+python3 simple_subscriber.py
+```
+
+Output:
+```
+[INFO] [simple_subscriber]: Subscriber ready
+```
+
+**Terminal 2** - Publish a message:
+```bash
+ros2 topic pub /robot_status std_msgs/msg/String "data: 'Hello from command line'"
+```
+
+Subscriber output:
+```
+[INFO] [simple_subscriber]: Received: Hello from command line
+```
+
+The subscriber receives and processes the message!
+
+## Temperature Subscriber Example
+
+Let's create a subscriber that monitors temperature:
+
+```python title="temperature_subscriber.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class TemperatureSubscriber(Node):
+    def __init__(self):
+        super().__init__('temperature_subscriber')
+
+        self.subscription = self.create_subscription(
+            Float32,
+            '/sensors/temperature',
+            self.temperature_callback,
+            10
+        )
+
+        self.high_temp_threshold = 30.0
+
+    def temperature_callback(self, msg):
+        temp = msg.data
+
+        self.get_logger().info(f'Temperature: {temp:.2f}°C')
+
+        # React to high temperature
+        if temp > self.high_temp_threshold:
+            self.get_logger().warn(
+                f'High temperature alert: {temp:.2f}°C!'
+            )
+
+def main():
+    rclpy.init()
+    node = TemperatureSubscriber()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+This subscriber monitors temperature and warns when it's too high.
+
+### Example 1: Temperature Monitoring Scenario
+
+**Type**: Scenario
+
+**Context**: Your robot has a temperature sensor publishing data. You need to monitor it and take action if it overheats.
+
+**Explanation**: The subscriber receives every temperature reading. It logs the value. It checks against a threshold. If temperature exceeds 30°C, it warns. You could extend this to trigger cooling, slow down motors, or send alerts. The subscriber reacts to data without knowing the publisher.
+
+**Takeaway**: Subscribers enable reactive behavior based on incoming data.
+
+## Callback Pattern
+
+Callbacks execute automatically when messages arrive:
+
+```
+1. Message published
+2. ROS 2 delivers to subscriber
+3. Your callback function executes
+4. Callback returns
+5. Wait for next message
+```
+
+**Important**: Keep callbacks short and fast.
+
+## Processing Data in Callbacks
+
+You can process, filter, or transform data:
+
+```python
+class DataProcessor(Node):
+    def __init__(self):
+        super().__init__('data_processor')
+
+        self.subscription = self.create_subscription(
+            Float32,
+            '/raw_sensor',
+            self.process_callback,
+            10
+        )
+
+        self.values = []
+
+    def process_callback(self, msg):
+        # Store value
+        self.values.append(msg.data)
+
+        # Keep only last 10 values
+        if len(self.values) > 10:
+            self.values.pop(0)
+
+        # Calculate moving average
+        average = sum(self.values) / len(self.values)
+
+        self.get_logger().info(
+            f'Raw: {msg.data:.2f}, Average: {average:.2f}'
+        )
+```
+
+This implements a moving average filter.
+
+## Subscriber and Publisher Combined
+
+Nodes often both subscribe and publish:
+
+```python title="data_filter_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class DataFilter(Node):
+    def __init__(self):
+        super().__init__('data_filter')
+
+        # Subscribe to raw data
+        self.subscription = self.create_subscription(
+            Float32,
+            '/sensors/temperature_raw',
+            self.filter_callback,
+            10
+        )
+
+        # Publish filtered data
+        self.publisher = self.create_publisher(
+            Float32,
+            '/sensors/temperature_filtered',
+            10
+        )
+
+        self.previous_value = None
+
+    def filter_callback(self, msg):
+        current = msg.data
+
+        # Simple spike filter
+        if self.previous_value is not None:
+            diff = abs(current - self.previous_value)
+
+            # Reject large spikes
+            if diff > 5.0:
+                self.get_logger().warn(f'Spike detected: {diff:.2f}')
+                return  # Don't publish
+
+        # Accept value
+        self.previous_value = current
+
+        # Publish filtered value
+        filtered_msg = Float32()
+        filtered_msg.data = current
+        self.publisher.publish(filtered_msg)
+
+        self.get_logger().info(f'Filtered: {current:.2f}°C')
+
+def main():
+    rclpy.init()
+    node = DataFilter()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+This creates a data processing pipeline.
+
+### Example 2: Data Pipeline Pattern
+
+**Type**: Pattern
+
+**Context**: You have noisy sensor data. You need to clean it before using it.
+
+**Explanation**: Create a chain of nodes. The sensor publishes raw data. A filter node subscribes to raw data and publishes filtered data. Control nodes subscribe to filtered data. Each node has one job. The pipeline is modular. You can swap filters easily. You can add more processing steps.
+
+**Takeaway**: Subscriber + publisher nodes create data processing pipelines.
+
+## Checking Your Subscriber
+
+Verify your subscriber is working:
+
+```bash
+# List all topics
+ros2 topic list
+
+# See who subscribes to a topic
+ros2 topic info /sensors/temperature
+
+# Check if subscriber is receiving
+# (subscriber should log messages)
+```
+
+## Quality of Service (QoS) Matching
+
+Subscriber QoS must be compatible with publisher QoS:
+
+```python
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+
+# Create QoS matching publisher
+qos = QoSProfile(
+    depth=10,
+    reliability=ReliabilityPolicy.RELIABLE
+)
+
+# Use with subscriber
+self.subscription = self.create_subscription(
+    Float32,
+    'topic',
+    self.callback,
+    qos  # Use QoS instead of simple queue size
+)
+```
+
+**Rule**: If publisher uses RELIABLE, subscriber should too.
+
+## Common Mistakes
+
+### Mistake 1: Not Storing Subscription
+
+```python
+# Wrong - subscription gets garbage collected
+def __init__(self):
+    self.create_subscription(String, 'topic', self.callback, 10)
+```
+
+Always store it:
+```python
+# Correct
+def __init__(self):
+    self.subscription = self.create_subscription(...)
+```
+
+### Mistake 2: Blocking in Callback
+
+```python
+# Bad - blocks for 10 seconds
+def callback(self, msg):
+    time.sleep(10)  # Don't do this!
+    self.get_logger().info(f'Received: {msg.data}')
+```
+
+Keep callbacks fast:
+```python
+# Good - quick processing
+def callback(self, msg):
+    self.get_logger().info(f'Received: {msg.data}')
+    # If you need slow processing, use a separate thread or timer
+```
+
+### Mistake 3: Calling Callback Directly
+
+```python
+# Wrong - don't call callback yourself
+def __init__(self):
+    self.subscription = self.create_subscription(...)
+    msg = String()
+    msg.data = "Test"
+    self.listener_callback(msg)  # Bad!
+```
+
+Let ROS 2 call the callback. Don't call it manually.
+
+### Mistake 4: Message Type Mismatch
+
+```python
+# Publisher uses Float32
+publisher = self.create_publisher(Float32, 'topic', 10)
+
+# Subscriber uses Int32 - WRONG!
+subscription = self.create_subscription(Int32, 'topic', callback, 10)
+```
+
+Message types must match exactly.
+
+## Callback Best Practices
+
+### 1. Keep Callbacks Short
+
+```python
+# Good - quick processing
+def callback(self, msg):
+    self.latest_value = msg.data
+    self.get_logger().info(f'Received: {msg.data}')
+```
+
+### 2. Avoid Heavy Computation
+
+```python
+# Bad - heavy computation in callback
+def callback(self, msg):
+    result = expensive_function(msg.data)  # Blocks!
+
+# Better - store and process later
+def callback(self, msg):
+    self.queue.append(msg.data)
+
+def timer_callback(self):
+    if self.queue:
+        result = expensive_function(self.queue.pop(0))
+```
+
+### 3. Handle Errors Gracefully
+
+```python
+def callback(self, msg):
+    try:
+        self.process_data(msg.data)
+    except Exception as e:
+        self.get_logger().error(f'Processing failed: {e}')
+```
+
+## Summary
+
+- Use `create_subscription()` to create subscribers
+- Callbacks execute automatically when messages arrive
+- Keep callbacks short and non-blocking
+- Message types must match between publisher and subscriber
+- Store the subscription reference to prevent garbage collection
+- Subscribers can also publish (data processing pipelines)
+- QoS settings must be compatible with publishers
+
+## Next Steps
+
+You can send and receive data. Next, learn advanced patterns with timers and callbacks.
+
+**Continue to**: [2.4 Timers & Callbacks](./2.4-timers-callbacks.mdx)
+
+**Related topics**:
+- [1.2 Topics](../chapter1-core-concepts/1.2-topics.mdx)
+- [2.2 Publishers](./2.2-publishers.mdx)
+- [Chapter 2 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a subscriber that receives strings and converts them to uppercase
+2. Create a subscriber that counts how many messages it receives
+3. Create a node that subscribes to one topic and publishes to another
+4. Test with `ros2 topic pub` command

@@ -1,83 +1,638 @@
-# Devcontainer + Docker Setup
+# Dev Container & Docker Setup
 
-Create reproducible development environments with Docker and devcontainers.
+**Estimated Reading Time**: 15 minutes
+**Prerequisites**: Basic command line knowledge
+**Difficulty**: Beginner
 
-## Why Use Devcontainers?
+## Introduction
 
-- Consistent development environment
-- Easy onboarding for new team members
-- Isolated dependencies
-- Works across platforms
+Development environments can be messy. You install packages. They conflict. A teammate can't run your code. Their system is different.
+
+Dev Containers solve this. They create identical environments for everyone. You define it once. Everyone uses it. No more "works on my machine."
+
+By the end, you'll have a working dev environment. You'll understand Docker. You'll understand Dev Containers. You'll use them for robotics.
+
+## What Are Dev Containers?
+
+A Dev Container is your development environment in a box.
+
+What it includes:
+- Your code editor (VS Code)
+- All required tools (ROS 2, Python, compilers)
+- Libraries and dependencies
+- Environment variables and settings
+
+Everything runs inside Docker. Docker is like a lightweight virtual machine. It isolates your environment. Your host system stays separate.
+
+### Example 1: The Recipe Box Analogy
+
+**Type**: Analogy
+
+**Context**: You want to bake a cake. Your friend wants the same cake.
+
+**Explanation**: Without a dev container, you give instructions. Get flour. Get eggs. Get sugar. Use an oven. But your friend might use different brands. Different oven temperature. The cake comes out wrong. With a dev container, you give a complete box. It has exact ingredients. It has the right oven. They open it. They bake. Perfect cake every time. Same result.
+
+**Takeaway**: Dev Containers package everything you need. They eliminate environment differences.
+
+## Why Use Dev Containers?
+
+### Consistency
+
+Everyone uses the same tools. Same ROS 2 version. Same Python version. Same libraries. No surprises.
+
+### Easy Onboarding
+
+New team member? They clone the repo. Open in VS Code. Click "Reopen in Container." Done. They're productive in minutes.
+
+### Isolation
+
+Your system stays clean. Don't pollute your host OS. Need different ROS versions? No problem. Each project has its own container.
+
+### Works Everywhere
+
+Windows, Mac, Linux. Doesn't matter. Docker runs the same way. Your dev environment is portable.
 
 ## Prerequisites
 
-- Docker Desktop (Windows/Mac) or Docker Engine (Linux)
-- Visual Studio Code
-- Remote - Containers extension
+Before starting, install these tools:
 
-## Setup Instructions
+### 1. Docker
 
-### 1. Install Docker
-
-**Ubuntu**:
+**Ubuntu/Linux**:
 ```bash
+# Install Docker Engine
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
+
+# Add your user to docker group (no sudo needed)
 sudo usermod -aG docker $USER
+
+# Log out and log back in for changes to take effect
 ```
 
-**Windows/Mac**: Install Docker Desktop
+**Windows/Mac**:
+- Download Docker Desktop from docker.com
+- Install and run Docker Desktop
+- Ensure it's running (check system tray)
 
-### 2. Install VS Code Extension
+### 2. Visual Studio Code
 
-Install "Dev Containers" extension in VS Code.
+Download from code.visualstudio.com
 
-### 3. Open Project in Container
+### 3. Dev Containers Extension
+
+In VS Code:
+1. Click Extensions (Ctrl/Cmd + Shift + X)
+2. Search "Dev Containers"
+3. Install the extension by Microsoft
+
+## Project Structure
+
+A typical setup looks like this:
+
+```
+your_project/
+├── .devcontainer/
+│   ├── devcontainer.json    # Main config
+│   ├── Dockerfile            # Container image
+│   └── post-create.sh        # Setup script
+├── src/                      # Your code
+└── README.md
+```
+
+The `.devcontainer` folder defines everything.
+
+## Complete Example: ROS 2 Dev Container
+
+Here's a complete setup. This works for ROS 2 Humble development.
+
+### devcontainer.json
+
+```json title=".devcontainer/devcontainer.json"
+// Library: Dev Containers v0.362.0
+// Last updated: 2025-12-05
+// Tested on: VS Code 1.95, Docker 24.0
+
+{
+  "name": "ROS 2 Humble Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "ROS_DISTRO": "humble"
+    }
+  },
+
+  // VS Code settings
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-vscode.cpptools",
+        "twxs.cmake",
+        "ms-iot.vscode-ros"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true
+      }
+    }
+  },
+
+  // Forward ROS 2 and RViz ports
+  "forwardPorts": [11311, 33691],
+
+  // Run after container is created
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Environment variables
+  "containerEnv": {
+    "ROS_DOMAIN_ID": "42"
+  },
+
+  // Mount your workspace
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+
+  // Keep container running
+  "overrideCommand": false,
+
+  // GPU support (optional)
+  "runArgs": ["--network=host"],
+
+  // User settings
+  "remoteUser": "ros"
+}
+```
+
+### Dockerfile
+
+```dockerfile title=".devcontainer/Dockerfile"
+# Library: Docker 24.0, ROS 2 Humble
+# Last updated: 2025-12-05
+# Tested on: Ubuntu 22.04
+
+FROM osrf/ros:humble-desktop-full
+
+# Avoid prompts during package installation
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install development tools
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    git \
+    vim \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip3 install \
+    numpy \
+    scipy \
+    matplotlib \
+    transforms3d
+
+# Create a non-root user
+ARG USERNAME=ros
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up ROS 2 workspace
+RUN mkdir -p /workspace/src
+WORKDIR /workspace
+
+# Source ROS 2 in bashrc
+RUN echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc \
+    && echo "if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi" >> /home/$USERNAME/.bashrc
+
+# Switch to non-root user
+USER $USERNAME
+
+CMD ["/bin/bash"]
+```
+
+### Post-Create Script
+
+```bash title=".devcontainer/post-create.sh"
+#!/bin/bash
+# Library: bash 5.1
+# Last updated: 2025-12-05
+# Tested on: Ubuntu 22.04
+
+source /opt/ros/humble/setup.bash
+
+sudo rosdep init || true
+rosdep update
+
+if [ -d "/workspace/src" ] && [ "$(ls -A /workspace/src)" ]; then
+    cd /workspace
+    colcon build --symlink-install
+    source install/setup.bash
+    echo "Workspace built successfully!"
+else
+    echo "No packages found in /workspace/src. Ready for development!"
+fi
+```
+
+This script sets up ROS 2. It builds your workspace automatically.
+
+Make it executable:
+```bash
+chmod +x .devcontainer/post-create.sh
+```
+
+## Using Your Dev Container
+
+### First Time Setup
+
+1. **Create the files**: Copy the config files above.
+
+2. **Open in VS Code**: Open your project folder.
+
+3. **Reopen in Container**:
+   - Press F1
+   - Type "Dev Containers: Reopen in Container"
+   - Press Enter
+
+4. **Wait for build**: First time takes 5-10 minutes. Docker downloads the image. Then it builds.
+
+5. **Start coding**: You're inside now. Everything is ready.
+
+### Daily Usage
+
+**Start working**:
+- Open VS Code
+- It remembers your container
+- Click "Reopen in Container" if needed
+
+**Build your code**:
+```bash
+cd /workspace
+colcon build
+source install/setup.bash
+```
+
+**Run ROS 2 nodes**:
+```bash
+ros2 run your_package your_node
+```
+
+**Stop working**:
+- Close VS Code
+- Container stops automatically
+
+### Example 2: Working with a Dev Container
+
+**Type**: Scenario
+
+**Context**: You clone a robotics project. It has a `.devcontainer` folder. You never used this project.
+
+**Explanation**: You open the project in VS Code. VS Code detects the `.devcontainer` folder. It asks "Reopen in Container?" You click yes. VS Code builds the container. This takes a few minutes. Then you're inside. You run `ros2 topic list`. It works. You run `colcon build`. It builds successfully. No manual installation needed. No configuration required. The container has everything. Next week, a new teammate joins. They do the same thing. Same experience. Identical environment.
+
+**Takeaway**: Dev Containers eliminate setup time. They make onboarding instant.
+
+## GPU Support (For Simulation)
+
+Gazebo and other simulators need GPU access. Enable it:
+
+### Linux (NVIDIA GPU)
+
+**Install NVIDIA Container Toolkit**:
+
+First, add the NVIDIA package repository:
 
 ```bash
-# In VS Code:
-# Cmd/Ctrl + Shift + P
-# "Dev Containers: Reopen in Container"
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 ```
 
-## Dockerfile Example
+Then install the toolkit:
 
-See `.devcontainer/Dockerfile` in the project root.
+```bash
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+```
 
-## Custom Configuration
+Finally, restart Docker:
 
-Modify `.devcontainer/devcontainer.json` to:
-- Add VS Code extensions
-- Configure port forwarding
-- Set environment variables
-- Run post-create commands
+```bash
+sudo systemctl restart docker
+```
 
-## GPU Support
-
-Enable GPU in devcontainer:
-
+**Update devcontainer.json**:
 ```json
 {
-  "runArgs": ["--gpus", "all"],
+  "runArgs": [
+    "--gpus", "all",
+    "--network=host"
+  ],
   "containerEnv": {
-    "NVIDIA_VISIBLE_DEVICES": "all"
+    "NVIDIA_VISIBLE_DEVICES": "all",
+    "NVIDIA_DRIVER_CAPABILITIES": "all"
   }
 }
 ```
 
-## Troubleshooting
+**Test GPU**:
 
-**Issue**: Container fails to build
-- Check Docker daemon is running
-- Verify internet connection
-- Review build logs
+Inside the container, run:
+```bash
+nvidia-smi
+```
 
-**Issue**: GPU not accessible
-- Install NVIDIA Container Toolkit
-- Verify GPU drivers on host
+You should see your GPU. It will show memory and usage.
+
+### Windows/Mac
+
+GPU passthrough is limited on Windows and Mac. For serious simulation, you have two options. First, use a Linux host. Second, use cloud GPU instances. See [Cloud Path](./cloud-path.mdx) for cloud setup.
+
+## Customizing Your Environment
+
+### Add More Tools
+
+You can add tools to your container. Edit the Dockerfile:
+
+```dockerfile
+RUN apt-get update && apt-get install -y \
+    htop \
+    tmux \
+    tree \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+### Add VS Code Extensions
+
+Add extensions to `devcontainer.json`:
+
+```json
+"extensions": [
+  "ms-python.python",
+  "eamodio.gitlens",
+  "donjayamanne.githistory"
+]
+```
+
+These load automatically when you open the container.
+
+### Add Python Packages
+
+Install Python packages in the Dockerfile:
+
+```dockerfile
+RUN pip3 install \
+    opencv-python \
+    torch \
+    tensorboard
+```
+
+### Set Environment Variables
+
+Set variables in `devcontainer.json`:
+
+```json
+"containerEnv": {
+  "ROS_DOMAIN_ID": "42",
+  "GAZEBO_MODEL_PATH": "/workspace/models"
+}
+```
+
+These are available in all terminal sessions.
+
+## Multiple Containers
+
+Need multiple ROS 2 versions? Create separate dev containers.
+
+Each project gets its own folder:
+
+```
+your_projects/
+├── project_humble/
+│   └── .devcontainer/    # ROS 2 Humble
+├── project_iron/
+│   └── .devcontainer/    # ROS 2 Iron
+└── project_jazzy/
+    └── .devcontainer/    # ROS 2 Jazzy
+```
+
+Each project has its own environment. No conflicts happen.
+
+## Docker Compose (Advanced)
+
+For complex setups with multiple services:
+
+```yaml title=".devcontainer/docker-compose.yml"
+# Library: Docker Compose v2.21
+# Last updated: 2025-12-05
+# Tested on: Docker 24.0
+
+version: '3.8'
+
+services:
+  robot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    network_mode: host
+    command: /bin/bash
+
+  database:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: robotics
+    ports:
+      - "5432:5432"
+```
+
+Then update `devcontainer.json`. Reference the compose file:
+
+```json
+{
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "robot",
+  "workspaceFolder": "/workspace"
+}
+```
+
+This connects multiple services together.
+
+## Common Issues
+
+### Issue 1: Container Won't Start
+
+**Problem**: "Failed to start container"
+
+**Solutions**:
+
+First, check if Docker is running:
+```bash
+docker ps
+```
+
+Check disk space:
+```bash
+docker system df
+```
+
+Clean old containers:
+```bash
+docker system prune
+```
+
+### Issue 2: Slow Build
+
+**Problem**: Building takes forever.
+
+**Solutions**:
+
+Docker caches layers. This speeds up builds. Don't change the Dockerfile often. Put frequently changing commands at the end. Use `.dockerignore` to exclude large files.
+
+### Issue 3: Can't Access USB Devices
+
+**Problem**: Robot USB devices not visible.
+
+**Solution**: Add device passthrough.
+
+Update your config:
+```json
+"runArgs": [
+  "--device=/dev/ttyUSB0:/dev/ttyUSB0",
+  "--privileged"
+]
+```
+
+This allows container access to USB devices.
+
+### Issue 4: Port Already in Use
+
+**Problem**: "Port 11311 already allocated"
+
+**Solution**: Stop the conflicting container.
+
+First, find running containers:
+```bash
+docker ps
+```
+
+Then stop the one using the port:
+```bash
+docker stop <container_id>
+```
+
+## Best Practices
+
+### 1. Keep Containers Lightweight
+
+Don't install everything. Only add what you need. Smaller containers are better. They build faster. They use less disk space.
+
+### 2. Use .dockerignore
+
+Create a `.dockerignore` file. This excludes unnecessary files.
+
+Add these lines:
+```text title=".dockerignore"
+.git
+.vscode
+build/
+install/
+log/
+*.pyc
+__pycache__/
+```
+
+Docker will skip these files. Builds become faster.
+
+### 3. Version Your Configuration
+
+Commit `.devcontainer/` to git. This is important. Your whole team gets the same environment. No setup differences.
+
+### 4. Document Requirements
+
+Add a README file. Explain these things:
+- Required Docker version
+- GPU requirements
+- Special setup steps
+
+### 5. Test Regularly
+
+Rebuild occasionally. This catches issues early.
+
+In VS Code, use this command:
+- "Dev Containers: Rebuild Container"
+
+Do this monthly. Or after major changes.
+
+## Debugging
+
+### View Logs
+
+To see container logs:
+```bash
+docker logs <container_name>
+```
+
+VS Code shows build logs. Check the Output panel.
+
+### Access Running Container
+
+First, find your container:
+```bash
+docker ps
+```
+
+Then access the shell:
+```bash
+docker exec -it <container_name> /bin/bash
+```
+
+### Reset Everything
+
+Remove all containers and images:
+```bash
+docker system prune -a --volumes
+```
+
+Then rebuild in VS Code. Use this command:
+- "Dev Containers: Rebuild Container Without Cache"
+
+This gives you a fresh start.
+
+## Summary
+
+Dev Containers solve environment problems. Everyone gets the same setup. No more "works on my machine" issues.
+
+Key benefits:
+- VS Code integration makes it easy to use
+- Isolation keeps your host system clean
+- GPU support enables simulation and training
+- Fully customizable to fit your needs
+- Perfect for teams and complex projects
 
 ## Next Steps
 
-- Customize devcontainer for your needs
-- Share configuration with team
-- Add project-specific tools and dependencies
+You now know how to set up dev containers. They give you consistent environments. They save time. They reduce errors.
+
+Next, learn how to troubleshoot common issues.
+
+**Continue to**: [Troubleshooting FAQ](./troubleshooting-faq.mdx)
+
+**Related topics**:
+- [Cloud Path](./cloud-path.mdx)
+- [Hardware Guide](./hardware-guide.mdx)
+- [Jetson BOM](./jetson-bom.mdx)

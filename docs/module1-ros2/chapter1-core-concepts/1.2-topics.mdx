@@ -1,0 +1,316 @@
+# 1.2 Topics - Streaming Data
+
+**Estimated Reading Time**: 8 minutes
+**Prerequisites**: 1.1 Nodes
+**Difficulty**: Beginner
+
+## Introduction
+
+Topics are for continuous data streams. Think sensor data, robot state, or camera images.
+
+Topics use the publisher-subscriber pattern. Publishers send data. Subscribers receive data. They don't know about each other.
+
+## How Topics Work
+
+**Publishers** send data to a topic.
+
+**Subscribers** receive data from a topic.
+
+Many publishers can write to one topic. Many subscribers can read from it. They are independent.
+
+### The Message Board Analogy
+
+Think of a topic as a message board in an office.
+
+- Anyone can post messages (publishers)
+- Anyone can read messages (subscribers)
+- Posters don't know who reads
+- Readers don't know who posts
+- Multiple people can post or read simultaneously
+
+## When to Use Topics
+
+Use topics for:
+- Sensor data (camera images, laser scans)
+- Robot state (joint positions, velocities)
+- Continuous monitoring (battery level, temperature)
+
+**Don't use topics for**:
+- Requests that need replies (use services)
+- Long tasks that need feedback (use actions)
+
+## Publisher Example
+
+Here's a node that publishes temperature data:
+
+```python title="temperature_publisher.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class TemperaturePublisher(Node):
+    def __init__(self):
+        super().__init__('temperature_publisher')
+
+        # Create publisher
+        self.publisher = self.create_publisher(Float32, 'temperature', 10)
+
+        # Publish every 1 second
+        self.timer = self.create_timer(1.0, self.publish_temperature)
+
+        self.temperature = 25.0
+
+    def publish_temperature(self):
+        msg = Float32()
+        msg.data = self.temperature
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Publishing: {msg.data}°C')
+
+        # Simulate temperature change
+        self.temperature += 0.1
+
+def main():
+    rclpy.init()
+    node = TemperaturePublisher()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Publisher Code Breakdown
+
+**Key lines**:
+
+1. `self.create_publisher(Float32, 'temperature', 10)` - Create a publisher
+   - `Float32`: Message type
+   - `'temperature'`: Topic name
+   - `10`: Queue size (how many messages to buffer)
+
+2. `self.create_timer(1.0, self.publish_temperature)` - Create a timer
+   - `1.0`: Interval in seconds
+   - `self.publish_temperature`: Callback function
+
+3. `self.publisher.publish(msg)` - Publish the message
+
+## Subscriber Example
+
+Here's a node that subscribes to temperature data:
+
+```python title="temperature_subscriber.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
+
+class TemperatureSubscriber(Node):
+    def __init__(self):
+        super().__init__('temperature_subscriber')
+
+        # Create subscriber
+        self.subscription = self.create_subscription(
+            Float32,
+            'temperature',
+            self.temperature_callback,
+            10
+        )
+
+    def temperature_callback(self, msg):
+        self.get_logger().info(f'Received: {msg.data}°C')
+
+        # React to high temperature
+        if msg.data > 30.0:
+            self.get_logger().warn('Temperature is too high!')
+
+def main():
+    rclpy.init()
+    node = TemperatureSubscriber()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Subscriber Code Breakdown
+
+**Key lines**:
+
+1. `self.create_subscription(...)` - Create a subscriber
+   - `Float32`: Message type (must match publisher)
+   - `'temperature'`: Topic name (must match publisher)
+   - `self.temperature_callback`: Function to call when data arrives
+   - `10`: Queue size
+
+2. `def temperature_callback(self, msg)` - Callback function
+   - Called automatically when new data arrives
+   - `msg`: The received message
+
+## Running Publisher and Subscriber
+
+**Terminal 1** - Start the publisher:
+```bash
+python3 temperature_publisher.py
+```
+
+Output:
+```
+[INFO] [temperature_publisher]: Publishing: 25.0°C
+[INFO] [temperature_publisher]: Publishing: 25.1°C
+[INFO] [temperature_publisher]: Publishing: 25.2°C
+```
+
+**Terminal 2** - Start the subscriber:
+```bash
+python3 temperature_subscriber.py
+```
+
+Output:
+```
+[INFO] [temperature_subscriber]: Received: 25.3°C
+[INFO] [temperature_subscriber]: Received: 25.4°C
+[INFO] [temperature_subscriber]: Received: 25.5°C
+```
+
+They communicate! The publisher sends. The subscriber receives.
+
+### Example 1: Multiple Sensors Scenario
+
+**Type**: Scenario
+
+**Context**: You have a robot with multiple temperature sensors. You want to log all temperatures and sound an alarm if any gets too hot.
+
+**Explanation**: Create one publisher node per sensor. Each publishes to the `temperature` topic. Create one subscriber node. It monitors the topic. It receives data from all sensors. The sensors don't know about the monitor. The monitor doesn't know how many sensors exist. This is loose coupling. You can add sensors. You can remove sensors. No code changes needed.
+
+**Takeaway**: Topics enable flexible, scalable communication. Nodes remain independent.
+
+## Checking Topics
+
+List all active topics:
+```bash
+ros2 topic list
+```
+
+See topic details:
+```bash
+ros2 topic info /temperature
+```
+
+Output shows:
+- Message type
+- Number of publishers
+- Number of subscribers
+
+Echo topic data in real-time:
+```bash
+ros2 topic echo /temperature
+```
+
+This prints all messages as they arrive.
+
+## Message Types
+
+Topics use typed messages. Common types:
+
+- `std_msgs/Float32` - Single floating point number
+- `std_msgs/String` - Text string
+- `std_msgs/Int32` - Integer
+- `sensor_msgs/Image` - Camera image
+- `geometry_msgs/Twist` - Velocity command
+
+Import from the appropriate package:
+```python
+from std_msgs.msg import Float32
+from sensor_msgs.msg import Image
+from geometry_msgs.msg import Twist
+```
+
+## Topic Quality of Service (QoS)
+
+The queue size (10 in our examples) is part of QoS settings.
+
+**Queue Size**:
+- Small (10): For fast-changing data
+- Large (100): For important data you can't lose
+
+**QoS profiles** control:
+- Reliability (best effort vs. reliable)
+- Durability (volatile vs. transient local)
+- History (keep last vs. keep all)
+
+Default settings work for most cases. Advanced users can customize.
+
+## Common Mistakes
+
+### Mistake 1: Mismatched Message Types
+
+```python
+# Publisher uses Float32
+self.publisher = self.create_publisher(Float32, 'temperature', 10)
+
+# Subscriber uses Int32 - WRONG!
+self.subscription = self.create_subscription(Int32, 'temperature', ...)
+```
+
+Message types must match exactly.
+
+### Mistake 2: Callback Blocks
+
+```python
+def temperature_callback(self, msg):
+    # Don't do this - blocks for 10 seconds!
+    time.sleep(10)
+    self.get_logger().info(f'Received: {msg.data}')
+```
+
+Keep callbacks short. Long operations block other callbacks.
+
+### Mistake 3: Not Storing Subscription
+
+```python
+# Wrong - subscription gets garbage collected
+def __init__(self):
+    self.create_subscription(Float32, 'temperature', self.callback, 10)
+```
+
+Always store the subscription:
+```python
+# Correct
+def __init__(self):
+    self.subscription = self.create_subscription(...)
+```
+
+## Summary
+
+- Topics enable publisher-subscriber communication
+- Publishers send data without knowing subscribers
+- Subscribers receive data without knowing publishers
+- Message types must match between publisher and subscriber
+- Use topics for continuous data streams
+- Keep callbacks short and non-blocking
+
+## Next Steps
+
+You've learned topics for streaming data. Next, learn services for request-response patterns.
+
+**Continue to**: [1.3 Services - Request-Response](./1.3-services.mdx)
+
+**Related topics**:
+- [1.1 Nodes](./1.1-nodes.mdx)
+- [Chapter 2: Publishers and Subscribers](../chapter2-python-rclpy/index.mdx)
+
+**Try it yourself**:
+1. Create a publisher that sends random numbers
+2. Create a subscriber that receives and prints them
+3. Run both and verify communication
+4. Use `ros2 topic echo` to monitor the data

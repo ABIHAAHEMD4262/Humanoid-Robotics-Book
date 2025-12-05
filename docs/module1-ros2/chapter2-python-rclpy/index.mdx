@@ -1,0 +1,157 @@
+# Chapter 2: Python Development with rclpy
+
+**Estimated Chapter Time**: 35 minutes
+**Prerequisites**: Chapter 1 - Core Communication Patterns
+**Difficulty**: Beginner to Intermediate
+
+## Chapter Overview
+
+You understand the core concepts. Now learn to implement them in Python using rclpy.
+
+rclpy is the ROS 2 Python client library. It provides the tools to create nodes, publishers, subscribers, services, and actions. This chapter teaches you practical Python development for robotics.
+
+## Learning Objectives
+
+By the end of this chapter, you will:
+
+- Master the rclpy node lifecycle and initialization patterns
+- Create and manage publishers for sending data
+- Implement subscribers with proper callback handling
+- Use timers for periodic execution
+- Handle multiple callbacks efficiently
+- Follow Python best practices for ROS 2 development
+
+## Chapter Structure
+
+This chapter contains 4 subtopics:
+
+### [2.1 rclpy Basics - Node Lifecycle](./2.1-rclpy-basics.mdx)
+Learn the fundamentals of rclpy, node initialization, and lifecycle management.
+
+**Key Concepts**: rclpy initialization, node creation, spinning, shutdown, context management
+
+**Estimated Time**: 10 minutes
+
+---
+
+### [2.2 Publishers - Sending Data](./2.2-publishers.mdx)
+Master creating publishers, message types, and publishing patterns.
+
+**Key Concepts**: create_publisher, message types, QoS, publishing rates, timers
+
+**Estimated Time**: 8 minutes
+
+---
+
+### [2.3 Subscribers - Receiving Data](./2.3-subscribers.mdx)
+Implement subscribers with efficient callback handling and data processing.
+
+**Key Concepts**: create_subscription, callbacks, message handling, queue management
+
+**Estimated Time**: 8 minutes
+
+---
+
+### [2.4 Timers & Callbacks - Event Handling](./2.4-timers-callbacks.mdx)
+Use timers for periodic execution and handle multiple concurrent callbacks.
+
+**Key Concepts**: create_timer, callback execution, threading, executor patterns
+
+**Estimated Time**: 9 minutes
+
+---
+
+## Prerequisites
+
+Before starting this chapter:
+
+- Complete Chapter 1 (Core Communication Patterns)
+- Have Python 3.8+ installed
+- Have ROS 2 Humble installed
+- Basic Python knowledge (classes, functions, imports)
+
+## What You'll Build
+
+Throughout this chapter, you'll create:
+
+- A properly initialized ROS 2 Python node
+- Temperature sensor publisher with configurable rate
+- Data processing subscriber with filtering
+- Multi-publisher node using timers
+- Complete node with multiple callbacks
+
+## Development Environment
+
+You'll need:
+- Text editor or IDE (VS Code recommended)
+- Terminal access
+- Python 3 interpreter
+- rclpy installed (`sudo apt install ros-humble-rclpy`)
+
+## Python Style for ROS 2
+
+We follow these conventions:
+- **Classes**: PascalCase (e.g., `TemperaturePublisher`)
+- **Functions**: snake_case (e.g., `publish_temperature`)
+- **Node names**: lowercase with underscores (e.g., `'temperature_publisher'`)
+- **Topic names**: lowercase with slashes (e.g., `'/sensors/temperature'`)
+
+## Why rclpy?
+
+rclpy provides:
+- **Pythonic API**: Natural Python patterns and idioms
+- **Full ROS 2 support**: All features available in C++ are in Python
+- **Easier prototyping**: Faster development than C++
+- **Rich ecosystem**: Access to Python libraries (NumPy, SciPy, etc.)
+
+Trade-off: Python is slower than C++. For high-performance nodes (100+ Hz), consider C++.
+
+## Common Patterns You'll Learn
+
+### Pattern 1: Publisher Node
+```python
+class PublisherNode(Node):
+    def __init__(self):
+        super().__init__('publisher_node')
+        self.publisher = self.create_publisher(MsgType, 'topic', 10)
+        self.timer = self.create_timer(1.0, self.timer_callback)
+
+    def timer_callback(self):
+        msg = MsgType()
+        self.publisher.publish(msg)
+```
+
+### Pattern 2: Subscriber Node
+```python
+class SubscriberNode(Node):
+    def __init__(self):
+        super().__init__('subscriber_node')
+        self.subscription = self.create_subscription(
+            MsgType, 'topic', self.listener_callback, 10)
+
+    def listener_callback(self, msg):
+        # Process incoming message
+        pass
+```
+
+### Pattern 3: Combined Node
+```python
+class CombinedNode(Node):
+    def __init__(self):
+        super().__init__('combined_node')
+        self.subscription = self.create_subscription(...)
+        self.publisher = self.create_publisher(...)
+        self.timer = self.create_timer(...)
+```
+
+## Next Steps
+
+Start with [2.1 rclpy Basics](./2.1-rclpy-basics.mdx) to learn node initialization and lifecycle management.
+
+**Quick Navigation**:
+- [2.1 rclpy Basics](./2.1-rclpy-basics.mdx)
+- [2.2 Publishers](./2.2-publishers.mdx)
+- [2.3 Subscribers](./2.3-subscribers.mdx)
+- [2.4 Timers & Callbacks](./2.4-timers-callbacks.mdx)
+- [← Chapter 1: Core Concepts](../chapter1-core-concepts/index.mdx)
+- [Module 1 Overview →](../index.mdx)

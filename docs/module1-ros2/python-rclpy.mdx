@@ -1,17 +1,412 @@
 # Python + rclpy Development Workflow
 
-Learn to build ROS 2 applications in Python.
+**Estimated Reading Time**: 12 minutes
+**Prerequisites**: ROS 2 Core Concepts
+**Difficulty**: Beginner
 
-## rclpy Basics
-- Node creation
-- Publishers and subscribers
-- Service clients and servers
-- Action clients and servers
+## Introduction
+
+Python makes robot programming accessible. With rclpy, you can build powerful robot applications using simple Python code. No C++ required.
+
+In this chapter, you'll learn the Python workflow for ROS 2. You'll write your first robot programs. You'll also learn best practices for development.
+
+By the end, you'll be comfortable creating nodes, publishers, and subscribers in Python.
+
+## What is rclpy?
+
+rclpy is the Python library for ROS 2. The name comes from "ROS Client Library Python."
+
+It provides Python APIs for:
+- Creating nodes
+- Publishing and subscribing to topics
+- Creating services
+- Handling actions
+- Managing parameters
+
+Think of it as your Python toolkit for robotics.
+
+### Example 1: Why Python for Robotics?
+
+**Type**: Comparison
+
+**Context**: You might wonder why use Python instead of C++. C++ is faster, right?
+
+**Explanation**: Python is easier to learn and write. For most robot tasks, Python is fast enough. You can prototype quickly. You can test ideas in minutes instead of hours. When you need speed later, you can optimize specific parts in C++. But start with Python to learn concepts.
+
+**Takeaway**: Python lets you focus on robot logic instead of fighting with syntax.
+
+## Your First ROS 2 Node
+
+Let's create a simple node. This is the foundation of all ROS 2 programs.
+
+```python title="hello_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class HelloNode(Node):
+    def __init__(self):
+        super().__init__('hello_node')
+        self.get_logger().info('Hello, Robot World!')
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = HelloNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+Let's break this down line by line.
+
+**Import statements**: Load the rclpy library and Node class.
+
+**HelloNode class**: Defines your node. It inherits from Node.
+
+**__init__ method**: Runs when the node starts. It calls the parent constructor with the node name. Then it logs a message.
+
+**main function**: Entry point of your program. It initializes rclpy, creates your node, and spins (keeps it running).
+
+**Cleanup**: Destroys the node and shuts down rclpy when done.
+
+## Publishers: Sending Messages
+
+Publishers send data to topics. Here's how to create one:
+
+```python title="publisher_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class PublisherNode(Node):
+    def __init__(self):
+        super().__init__('publisher_node')
+
+        # Create publisher
+        self.publisher = self.create_publisher(String, 'robot_status', 10)
+
+        # Create timer (publishes every 1 second)
+        self.timer = self.create_timer(1.0, self.timer_callback)
+
+        self.counter = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = f'Robot status: {self.counter}'
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Published: {msg.data}')
+        self.counter += 1
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = PublisherNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### How It Works
+
+**create_publisher**: Creates a publisher on the 'robot_status' topic. The `10` is the queue size.
+
+**create_timer**: Calls your callback function every second. This is how you publish periodically.
+
+**timer_callback**: Runs every second. It creates a message, fills it with data, and publishes it.
+
+### Example 2: Understanding Publishers
+
+**Type**: Analogy
+
+**Context**: Imagine a weather station. It measures temperature every minute. It broadcasts this data to anyone listening.
+
+**Explanation**: A ROS 2 publisher works the same way. Your node measures or generates data. It publishes this data to a topic. Any node can subscribe to that topic. They all receive the same data. The publisher doesn't know who's listening. It just broadcasts.
+
+**Takeaway**: Publishers broadcast data. They don't care who receives it.
+
+## Subscribers: Receiving Messages
+
+Subscribers listen to topics. They receive messages that publishers send.
+
+```python title="subscriber_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class SubscriberNode(Node):
+    def __init__(self):
+        super().__init__('subscriber_node')
+
+        # Create subscriber
+        self.subscription = self.create_subscription(
+            String,
+            'robot_status',
+            self.listener_callback,
+            10
+        )
+
+    def listener_callback(self, msg):
+        self.get_logger().info(f'Received: {msg.data}')
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = SubscriberNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### How It Works
+
+**create_subscription**: Creates a subscriber to the 'robot_status' topic. It calls `listener_callback` when messages arrive.
+
+**listener_callback**: Runs whenever a message is received. It gets the message as a parameter.
 
 ## Development Workflow
-- Project structure
-- Testing
-- Debugging
+
+Here's the typical workflow for ROS 2 Python development:
+
+### 1. Create Your Python File
+
+Put your code in `<package_name>/<your_node>.py`.
+
+### 2. Edit setup.py
+
+Add your node to the entry_points:
+
+```python
+entry_points={
+    'console_scripts': [
+        'my_node = my_package.my_node:main',
+    ],
+},
+```
+
+### 3. Build Your Package
+
+```bash
+cd ~/ros2_ws
+colcon build --packages-select my_package
+source install/setup.bash
+```
+
+### 4. Run Your Node
+
+```bash
+ros2 run my_package my_node
+```
+
+### 5. Test and Debug
+
+Use `ros2 topic list` to see topics. Use `ros2 topic echo` to see messages. Check logs for errors.
+
+## Project Structure
+
+A typical Python ROS 2 package looks like this:
+
+```text
+my_package/
+├── my_package/
+│   ├── __init__.py
+│   ├── my_node.py
+│   └── another_node.py
+├── setup.py
+├── setup.cfg
+├── package.xml
+└── resource/
+    └── my_package
+```
+
+**my_package/** (inner): Contains your Python code.
+
+**setup.py**: Defines how to install your package.
+
+**package.xml**: Describes package metadata and dependencies.
+
+## Debugging Tips
+
+### Print Debug Messages
+
+Use the logger instead of print():
+
+```python
+self.get_logger().info('This is an info message')
+self.get_logger().warn('This is a warning')
+self.get_logger().error('This is an error')
+```
+
+### Check If Node Is Running
+
+```bash
+ros2 node list
+```
+
+### Inspect Topics
+
+```bash
+ros2 topic list
+ros2 topic echo /robot_status
+```
+
+### View Node Info
+
+```bash
+ros2 node info /my_node
+```
 
 ## Best Practices
-Python-specific ROS 2 patterns.
+
+Follow these practices for clean code:
+
+### 1. Use Descriptive Names
+
+Bad: `node1`, `pub`, `cb`
+
+Good: `velocity_controller`, `cmd_vel_publisher`, `sensor_callback`
+
+### 2. Handle Shutdown Gracefully
+
+Use try-except for cleanup:
+
+```python
+def main(args=None):
+    rclpy.init(args=args)
+    node = MyNode()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+```
+
+### 3. Use Parameters for Configuration
+
+Don't hardcode values. Use parameters:
+
+```python
+self.declare_parameter('update_rate', 10.0)
+rate = self.get_parameter('update_rate').value
+```
+
+### 4. Keep Callbacks Short
+
+Long callbacks block other operations. If you need to do heavy computation, use a separate thread.
+
+### 5. Log Important Events
+
+Log when things happen:
+- Node initialization
+- Connection to topics
+- Errors and warnings
+- Important state changes
+
+## Common Patterns
+
+### Pattern 1: Timer-Based Publishing
+
+Use this when you want to publish at a fixed rate:
+
+```python
+self.timer = self.create_timer(0.1, self.timer_callback)  # 10 Hz
+```
+
+### Pattern 2: Event-Driven Subscribing
+
+Use this when you want to react to incoming data:
+
+```python
+self.subscription = self.create_subscription(
+    LaserScan,
+    'scan',
+    self.scan_callback,
+    10
+)
+```
+
+### Pattern 3: State Machine
+
+Use this for complex behaviors:
+
+```python
+class RobotNode(Node):
+    def __init__(self):
+        super().__init__('robot_node')
+        self.state = 'IDLE'
+
+    def timer_callback(self):
+        if self.state == 'IDLE':
+            self.handle_idle()
+        elif self.state == 'MOVING':
+            self.handle_moving()
+```
+
+## Testing Your Code
+
+Always test your nodes before deploying:
+
+### Manual Testing
+
+Run your node and check output:
+
+```bash
+ros2 run my_package my_node
+```
+
+In another terminal, check topics:
+
+```bash
+ros2 topic echo /my_topic
+```
+
+### Integration Testing
+
+Run multiple nodes together:
+
+```bash
+ros2 launch my_package my_launch.py
+```
+
+Verify they communicate correctly.
+
+## Summary
+
+- **rclpy** is the Python library for ROS 2
+- **Nodes** are Python classes that inherit from Node
+- **Publishers** broadcast data to topics
+- **Subscribers** listen to topics and receive data
+- **Follow best practices** for clean, maintainable code
+- **Test thoroughly** before deploying to real robots
+
+## Next Steps
+
+Now you know Python ROS 2 basics. Practice by building your own nodes.
+
+**Continue to**: [URDF/Xacro for Humanoid Robots](./urdf-xacro.mdx)
+
+**Related topics**:
+- [ROS 2 Core Concepts](./core-concepts.mdx)
+- [Building & Launching Packages](./ros2-packages.mdx)
+
+**Try it yourself**: Create a node that subscribes to one topic and publishes to another. This is called a "filter" or "transformer" node. It's a common pattern in robotics.

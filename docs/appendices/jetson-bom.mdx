@@ -1,8 +1,32 @@
 # Economy Jetson Kit BOM (Bill of Materials)
 
-Complete shopping list for an economical Jetson-based development setup.
+**Estimated Reading Time**: 5 minutes
+**Prerequisites**: None
+**Difficulty**: Beginner
+
+## Introduction
+
+Building a robot doesn't have to cost thousands of dollars. This shopping list helps you create an economical development setup. It uses the NVIDIA Jetson Orin Nano. This is a powerful computer for AI and robotics.
+
+By the end, you'll know exactly what to buy. You'll also know how much it costs. This setup is perfect for learning and experimentation.
+
+## What is a Bill of Materials?
+
+A Bill of Materials (BOM) is a shopping list. It lists every part you need. It includes part numbers and prices. This makes shopping easier.
+
+### Example 1: Planning Your Purchase
+
+**Type**: Scenario
+
+**Context**: Sarah wants to build a robot. She's overwhelmed by all the different components. She doesn't know what she actually needs.
+
+**Explanation**: A BOM solves this problem. It lists exactly what you need. It includes specific part numbers. This means you won't buy the wrong thing. You'll also know the total cost upfront.
+
+**Takeaway**: Use this BOM as your shopping checklist. It saves time and prevents mistakes.
 
 ## Core Components
+
+These are the essential parts. You need all of these to get started.
 
 | Item | Part Number | Price (USD) | Quantity |
 |------|-------------|-------------|----------|
@@ -12,25 +36,58 @@ Complete shopping list for an economical Jetson-based development setup.
 | Intel RealSense D435 | D435 | $179 | 1 |
 | USB Hub | Generic 4-port | $15 | 1 |
 
+### Component Explanations
+
+**Jetson Orin Nano Dev Kit**: This is your robot's brain. It runs AI models. It processes camera data. It controls robot movements.
+
+**microSD Card**: This stores the operating system. It also stores your programs. Get at least 128GB.
+
+**Power Supply**: Powers the Jetson. Must be at least 65W. USB-C connection required.
+
+**RealSense Camera**: This gives your robot vision. It captures color images. It also measures depth. This helps robots avoid obstacles.
+
+**USB Hub**: Connects multiple devices. Useful for keyboard, mouse, and other peripherals.
+
 ## Optional Add-Ons
 
-- USB Microphone: $25
-- External SSD (1TB): $80
-- Cooling Fan: $15
+These parts are not required. But they improve performance.
+
+- **USB Microphone**: $25 - For voice commands
+- **External SSD (1TB)**: $80 - Faster storage
+- **Cooling Fan**: $15 - Keeps Jetson cooler under load
+
+### Example 2: Base vs Full Setup
+
+**Type**: Comparison
+
+**Context**: You're deciding whether to buy optional components. You wonder if they're worth the extra cost.
+
+**Explanation**: The base setup ($738) is enough to start learning. It runs all examples in this book. The optional SSD makes loading data faster. The microphone enables voice control. The fan helps during long training sessions. Add these later if needed.
+
+**Takeaway**: Start with the base setup. Add optional parts as your projects grow.
 
 ## Total Cost
 
 - **Base Setup**: $738
 - **With Optional Add-Ons**: $858
 
+This is much less than professional robot platforms. Those often cost $5,000 or more.
+
 ## Assembly Instructions
 
-1. Insert microSD card with JetPack image
-2. Connect power supply
-3. Connect peripherals (keyboard, mouse, monitor)
-4. Power on and complete setup
+Setting up is straightforward. Follow these steps:
+
+1. Insert the microSD card. Use one with JetPack image.
+2. Connect the power supply. Use the USB-C port.
+3. Connect your peripherals. This includes keyboard, mouse, and monitor.
+4. Power on the device.
+5. Complete the setup wizard.
+
+The whole process takes about 30 minutes.
 
 ## Software Setup
+
+After hardware assembly, install software:
 
 ```bash
 # Update system
@@ -43,14 +100,39 @@ sudo apt update && sudo apt upgrade -y
 # (follow NVIDIA documentation)
 ```
 
+Full installation instructions are in the main documentation.
+
 ## Performance Expectations
 
-- Whisper Base: 1-2x real-time
-- Object Detection (YOLO): 15-20 FPS
-- VSLAM: Real-time capable
+Here's what this hardware can do:
+
+- **Whisper Base**: 1-2x real-time speech recognition
+- **Object Detection (YOLO)**: 15-20 frames per second
+- **VSLAM**: Real-time simultaneous localization and mapping
+
+These speeds are sufficient for learning. They also work for many real robot applications.
+
+## Where to Buy
+
+**Jetson Orin Nano**: Available from NVIDIA, Amazon, or authorized distributors.
+
+**RealSense Camera**: Available from Intel or major electronics retailers.
+
+**Other Components**: Available from Amazon, Newegg, or local electronics stores.
+
+Shipping time is typically 3-5 business days.
 
 ## Next Steps
 
-- Complete software setup
-- Run example projects
-- Build your first robot application
+After you receive your parts:
+
+1. Complete hardware assembly
+2. Run software setup
+3. Test with example projects
+4. Build your first robot application
+
+**Continue to**: [Dev Container & Docker Setup](./devcontainer-docker-setup.mdx)
+
+**Related topics**:
+- [Hardware Guide](./hardware-guide.mdx)
+- [Troubleshooting FAQ](./troubleshooting-faq.mdx)

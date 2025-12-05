@@ -1,0 +1,424 @@
+# 2.1 rclpy Basics - Node Lifecycle
+
+**Estimated Reading Time**: 10 minutes
+**Prerequisites**: Chapter 1 - Core Communication Patterns
+**Difficulty**: Beginner
+
+## Introduction
+
+rclpy is the Python library for ROS 2. The name comes from "ROS Client Library Python."
+
+This subtopic teaches you the fundamentals. Node initialization. Lifecycle management. Best practices. Master these patterns. They form the foundation of all Python ROS 2 development.
+
+## What is rclpy?
+
+rclpy provides Python APIs for:
+- Creating nodes
+- Publishing and subscribing to topics
+- Creating services
+- Handling actions
+- Managing parameters
+
+Think of it as your Python toolkit for robotics.
+
+### Example 1: Why Python for Robotics?
+
+**Type**: Comparison
+
+**Context**: You might wonder why use Python instead of C++. C++ is faster, right?
+
+**Explanation**: Python is easier to learn and write. For most robot tasks, Python is fast enough. You can prototype quickly. You can test ideas in minutes instead of hours. When you need speed later, you can optimize specific parts in C++. But start with Python to learn concepts.
+
+**Takeaway**: Python lets you focus on robot logic instead of fighting with syntax.
+
+## The rclpy Lifecycle
+
+Every rclpy program follows the same pattern:
+
+```
+1. Initialize ROS 2     → rclpy.init()
+2. Create node          → Node()
+3. Spin (run node)      → rclpy.spin()
+4. Destroy node         → node.destroy_node()
+5. Shutdown ROS 2       → rclpy.shutdown()
+```
+
+This lifecycle ensures proper setup and cleanup.
+
+## Your First ROS 2 Node
+
+Let's create a simple node:
+
+```python title="hello_node.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class HelloNode(Node):
+    def __init__(self):
+        super().__init__('hello_node')
+        self.get_logger().info('Hello, Robot World!')
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = HelloNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Code Breakdown
+
+**Line by line**:
+
+1. `import rclpy` - Import the ROS 2 Python library
+2. `from rclpy.node import Node` - Import the base Node class
+3. `class HelloNode(Node)` - Create your custom node class
+4. `super().__init__('hello_node')` - Call parent constructor with node name
+5. `self.get_logger().info(...)` - Log a message
+6. `rclpy.init(args=args)` - Initialize ROS 2 system
+7. `node = HelloNode()` - Create an instance of your node
+8. `rclpy.spin(node)` - Keep the node running (blocks here)
+9. `node.destroy_node()` - Clean up node resources
+10. `rclpy.shutdown()` - Shutdown ROS 2 system
+
+### Running the Node
+
+Save the file. Then run it:
+
+```bash
+python3 hello_node.py
+```
+
+Output:
+```
+[INFO] [hello_node]: Hello, Robot World!
+```
+
+The node runs and stays alive. Press Ctrl+C to stop it.
+
+## Understanding `rclpy.init()`
+
+This function initializes the ROS 2 system.
+
+```python
+rclpy.init(args=args)
+```
+
+**What it does**:
+- Sets up the ROS 2 context
+- Parses command-line arguments
+- Initializes logging
+- Prepares communication infrastructure
+
+**When to call it**: Once at program start, before creating any nodes.
+
+**Arguments**: Pass command-line args to enable ROS 2 remapping:
+
+```bash
+python3 hello_node.py --ros-args --remap __node:=my_node
+```
+
+This remaps the node name at runtime.
+
+## Understanding `rclpy.spin()`
+
+This function keeps your node running.
+
+```python
+rclpy.spin(node)
+```
+
+**What it does**:
+- Processes callbacks (timers, subscriptions, services)
+- Handles ROS 2 communication
+- Blocks until Ctrl+C or shutdown
+
+**Why it's needed**: Without spin, your node would exit immediately after `__init__`.
+
+### Example 2: What Happens Without Spin?
+
+**Type**: Scenario
+
+**Context**: You forget to call `rclpy.spin()`.
+
+**Explanation**:
+```python
+def main():
+    rclpy.init()
+    node = HelloNode()
+    # Missing: rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+```
+
+The program runs. It prints "Hello, Robot World!". Then it exits immediately. No time for callbacks. No time for subscriptions. The node dies before it can do anything useful.
+
+**Takeaway**: Always call `spin()` to keep your node alive.
+
+## Understanding `destroy_node()` and `shutdown()`
+
+Cleanup is important. It prevents resource leaks.
+
+```python
+node.destroy_node()  # Clean up node resources
+rclpy.shutdown()      # Shutdown ROS 2 system
+```
+
+**`destroy_node()`**:
+- Destroys publishers, subscribers, timers
+- Releases network resources
+- Called on the specific node instance
+
+**`shutdown()`**:
+- Shuts down entire ROS 2 system
+- Stops all communication
+- Called once at program end
+
+**Order matters**: Destroy nodes before shutdown.
+
+## Node Naming
+
+Every node needs a unique name:
+
+```python
+super().__init__('hello_node')  # Name is 'hello_node'
+```
+
+**Naming conventions**:
+- Use lowercase letters
+- Use underscores for spaces
+- Make names descriptive
+- Avoid special characters
+
+**Good names**: `camera_driver`, `object_detector`, `motor_controller`
+**Bad names**: `node1`, `MyNode`, `n`
+
+### Checking Your Node
+
+Verify your node is running:
+
+```bash
+ros2 node list
+```
+
+Output:
+```
+/hello_node
+```
+
+Get detailed node information:
+
+```bash
+ros2 node info /hello_node
+```
+
+Shows subscribers, publishers, services, and actions.
+
+## Logging in rclpy
+
+Use the logger for output instead of `print()`:
+
+```python
+self.get_logger().info('Information message')
+self.get_logger().warn('Warning message')
+self.get_logger().error('Error message')
+self.get_logger().debug('Debug message')
+```
+
+**Why use logger instead of print()**:
+- Timestamps included automatically
+- Node name added to messages
+- Log levels allow filtering
+- Integration with ROS 2 logging system
+
+### Log Levels
+
+From least to most severe:
+- **DEBUG**: Detailed diagnostic information
+- **INFO**: General information
+- **WARN**: Something unexpected but not critical
+- **ERROR**: A serious problem occurred
+- **FATAL**: Critical failure, node cannot continue
+
+## Context Managers (Advanced)
+
+You can use Python context managers for cleaner code:
+
+```python title="hello_node_context.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
+import rclpy
+from rclpy.node import Node
+
+class HelloNode(Node):
+    def __init__(self):
+        super().__init__('hello_node')
+        self.get_logger().info('Hello, Robot World!')
+
+def main(args=None):
+    with rclpy.init(args=args):
+        node = HelloNode()
+        try:
+            rclpy.spin(node)
+        finally:
+            node.destroy_node()
+
+if __name__ == '__main__':
+    main()
+```
+
+The `with` statement ensures automatic cleanup. Even if exceptions occur.
+
+**Note**: This is advanced. Stick with the standard pattern when starting out.
+
+## Handling Ctrl+C Gracefully
+
+Handle shutdown signals properly:
+
+```python
+import rclpy
+from rclpy.node import Node
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = HelloNode()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass  # Ctrl+C pressed
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+```
+
+This catches Ctrl+C and ensures cleanup runs.
+
+## Common Mistakes
+
+### Mistake 1: Forgetting to Initialize
+
+```python
+# Wrong - rclpy not initialized
+def main():
+    # Missing: rclpy.init()
+    node = HelloNode()  # Error!
+```
+
+Always call `rclpy.init()` first.
+
+### Mistake 2: Creating Multiple Contexts
+
+```python
+# Wrong - multiple init calls
+def main():
+    rclpy.init()
+    rclpy.init()  # Error! Already initialized
+```
+
+Call `init()` only once per program.
+
+### Mistake 3: Not Calling Super Init
+
+```python
+# Wrong - parent constructor not called
+class HelloNode(Node):
+    def __init__(self):
+        # Missing: super().__init__('hello_node')
+        self.get_logger().info('Hello')  # Error! Logger doesn't exist
+```
+
+Always call `super().__init__(node_name)` first.
+
+### Mistake 4: Incorrect Cleanup Order
+
+```python
+# Wrong order
+def main():
+    rclpy.init()
+    node = HelloNode()
+    rclpy.spin(node)
+    rclpy.shutdown()       # Wrong! Shutdown before destroy
+    node.destroy_node()    # Too late
+```
+
+Correct order: destroy node, then shutdown.
+
+## Best Practices
+
+### 1. Use Descriptive Node Names
+
+```python
+# Good
+super().__init__('temperature_sensor')
+
+# Bad
+super().__init__('node1')
+```
+
+### 2. Log Important Events
+
+```python
+def __init__(self):
+    super().__init__('my_node')
+    self.get_logger().info('Node initialized successfully')
+```
+
+### 3. Handle Exceptions
+
+```python
+try:
+    rclpy.spin(node)
+except KeyboardInterrupt:
+    self.get_logger().info('Shutting down gracefully')
+except Exception as e:
+    self.get_logger().error(f'Unexpected error: {e}')
+finally:
+    node.destroy_node()
+```
+
+### 4. Follow the Standard Pattern
+
+Always use the same lifecycle pattern:
+```python
+rclpy.init()
+node = MyNode()
+rclpy.spin(node)
+node.destroy_node()
+rclpy.shutdown()
+```
+
+## Summary
+
+- rclpy is the Python library for ROS 2 development
+- Every node follows the init → create → spin → destroy → shutdown lifecycle
+- `rclpy.init()` initializes ROS 2 (call once)
+- `rclpy.spin()` keeps the node running (blocks)
+- `destroy_node()` and `shutdown()` clean up resources
+- Use the logger instead of print() for output
+- Always handle Ctrl+C gracefully
+
+## Next Steps
+
+You understand the rclpy lifecycle. Next, learn how to create publishers for sending data.
+
+**Continue to**: [2.2 Publishers - Sending Data](./2.2-publishers.mdx)
+
+**Related topics**:
+- [1.1 Nodes](../chapter1-core-concepts/1.1-nodes.mdx)
+- [Chapter 2 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Create a node that logs your name
+2. Run it and verify it appears in `ros2 node list`
+3. Add try/except to handle Ctrl+C gracefully
+4. Experiment with different log levels

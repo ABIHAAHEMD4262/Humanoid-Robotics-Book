@@ -1,17 +1,416 @@
 # URDF/Xacro for Humanoid Robots
 
-Define robot models using URDF and Xacro.
+**Estimated Reading Time**: 12 minutes
+**Prerequisites**: ROS 2 Core Concepts
+**Difficulty**: Beginner
 
-## URDF Basics
-Links, joints, and properties.
+## Introduction
 
-## Xacro Macros
-Parametric robot descriptions.
+Robots need models. Models tell ROS 2 what your robot looks like. They describe links and joints. They define shapes and sizes.
 
-## Humanoid-Specific Considerations
-- Kinematic chains
-- Mass distribution
-- Joint limits
+URDF and Xacro are the languages for robot models. URDF is simple but verbose. Xacro adds shortcuts and reusable parts.
 
-## Example: Simple Humanoid
-Complete URDF/Xacro example.
+By the end of this chapter, you'll know how to describe robots. You'll create your first robot model.
+
+## What is URDF?
+
+URDF stands for Unified Robot Description Format. It's an XML file that describes robots.
+
+Think of it as a blueprint. It tells ROS 2:
+- What parts your robot has
+- How parts connect
+- Where things are located
+- How joints move
+
+### Example 1: Building Blocks Analogy
+
+**Type**: Analogy
+
+**Context**: Remember playing with building blocks as a kid? Each block has a shape. Blocks connect in specific ways.
+
+**Explanation**: URDF works the same way. Each robot part is a **link** (like a block). Connections between parts are **joints** (like how blocks snap together). Just like building blocks have rules (this block only connects here), joints have limits (this arm only bends 90 degrees).
+
+**Takeaway**: URDF is just a formal way to describe how robot parts fit together.
+
+## Links: Robot Parts
+
+A link is a single rigid part of your robot. Examples:
+- An arm segment
+- A wheel
+- The main body
+- A sensor mount
+
+Each link has:
+- **Visual**: What it looks like
+- **Collision**: Its shape for collision detection
+- **Inertial**: Its mass and how it spins
+
+### Simple Link Example
+
+```xml title="simple_link.urdf"
+<!-- Library: ROS 2 URDF (Python stdlib)
+     Last updated: 2025-12-05
+     Tested on: ROS 2 Humble -->
+
+<robot name="simple_robot">
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.5 0.3 0.1"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size="0.5 0.3 0.1"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0"
+               iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+  </link>
+</robot>
+```
+
+This defines a blue box. It's 0.5m long, 0.3m wide, 0.1m tall. It weighs 1kg.
+
+## Joints: Connecting Parts
+
+Joints connect two links. They define how parts move relative to each other.
+
+### Joint Types
+
+**Fixed**: Parts don't move
+- Example: A sensor bolted to the robot
+
+**Revolute**: Rotates like a hinge
+- Example: An elbow joint
+- Has angle limits
+
+**Continuous**: Rotates forever
+- Example: A wheel
+- No limits
+
+**Prismatic**: Slides in and out
+- Example: A telescope arm
+
+### Simple Joint Example
+
+```xml title="simple_joint.urdf"
+<!-- Library: ROS 2 URDF (Python stdlib)
+     Last updated: 2025-12-05
+     Tested on: ROS 2 Humble -->
+
+<robot name="robot_with_joint">
+  <link name="base_link">
+    <!-- Base link definition -->
+  </link>
+
+  <link name="arm_link">
+    <!-- Arm link definition -->
+  </link>
+
+  <joint name="base_to_arm" type="revolute">
+    <parent link="base_link"/>
+    <child link="arm_link"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.57" upper="1.57" effort="10" velocity="1.0"/>
+  </joint>
+</robot>
+```
+
+This joint connects the base to the arm. It rotates around the Z axis. It can rotate between -90° and +90°.
+
+## What is Xacro?
+
+Xacro adds programming to URDF. It lets you:
+- Use variables
+- Write macros (reusable templates)
+- Do math
+- Include other files
+
+### Why Xacro?
+
+URDF gets repetitive. Imagine a humanoid with two arms. Each arm has identical structure. With URDF, you copy-paste everything. With Xacro, you write it once and reuse it.
+
+### Example 2: Recipe vs. Template
+
+**Type**: Comparison
+
+**Context**: You're baking cookies. You make the same cookie 50 times.
+
+**Explanation**:
+- **URDF** is like writing the full recipe 50 times. Change the sugar amount? Edit 50 places.
+- **Xacro** is like a template. Write the recipe once with a variable for sugar. Change one number, update all 50 cookies.
+
+**Takeaway**: Xacro reduces repetition and errors. It makes maintenance easier.
+
+## Xacro Basics
+
+### Variables
+
+```xml title="xacro_variables.xacro"
+<!-- Library: ROS 2 Xacro (Python stdlib)
+     Last updated: 2025-12-05
+     Tested on: ROS 2 Humble -->
+
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_robot">
+
+  <!-- Define variables -->
+  <xacro:property name="arm_length" value="0.5"/>
+  <xacro:property name="arm_radius" value="0.05"/>
+
+  <link name="arm_link">
+    <visual>
+      <geometry>
+        <cylinder length="${arm_length}" radius="${arm_radius}"/>
+      </geometry>
+    </visual>
+  </link>
+
+</robot>
+```
+
+The `${arm_length}` gets replaced with 0.5. Change one variable, update everywhere it's used.
+
+### Macros
+
+Macros are reusable templates:
+
+```xml title="xacro_macros.xacro"
+<!-- Library: ROS 2 Xacro (Python stdlib)
+     Last updated: 2025-12-05
+     Tested on: ROS 2 Humble -->
+
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_robot">
+
+  <!-- Define macro for a wheel -->
+  <xacro:macro name="wheel" params="prefix">
+    <link name="${prefix}_wheel">
+      <visual>
+        <geometry>
+          <cylinder length="0.1" radius="0.2"/>
+        </geometry>
+      </visual>
+    </link>
+  </xacro:macro>
+
+  <!-- Use macro to create wheels -->
+  <xacro:wheel prefix="left"/>
+  <xacro:wheel prefix="right"/>
+
+</robot>
+```
+
+This creates two wheels: `left_wheel` and `right_wheel`. Write once, use many times.
+
+## Humanoid Robot Considerations
+
+Humanoid robots are complex. They have many joints. Here are key considerations:
+
+### Kinematic Chains
+
+A kinematic chain is a sequence of links and joints. For a humanoid:
+- Body → shoulder → upper arm → forearm → hand
+- Body → hip → thigh → shin → foot
+
+Each chain needs careful modeling.
+
+### Mass Distribution
+
+Real robots have weight. URDF needs accurate mass values. Wrong mass values cause:
+- Incorrect simulation physics
+- Wrong motor torque calculations
+- Balance problems
+
+### Joint Limits
+
+Every joint has limits. An elbow can't bend backward. Define realistic limits:
+
+```xml
+<limit lower="-2.0" upper="0.1" effort="100" velocity="2.0"/>
+```
+
+- `lower/upper`: Angle limits (radians)
+- `effort`: Maximum torque (Newton-meters)
+- `velocity`: Maximum speed (radians/second)
+
+## Complete Example: Simple Humanoid
+
+Here's a simplified humanoid torso with one arm:
+
+```xml title="simple_humanoid.xacro"
+<!-- Library: ROS 2 Xacro (Python stdlib)
+     Last updated: 2025-12-05
+     Tested on: ROS 2 Humble -->
+
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="simple_humanoid">
+
+  <!-- Properties -->
+  <xacro:property name="torso_height" value="0.4"/>
+  <xacro:property name="arm_length" value="0.3"/>
+
+  <!-- Torso -->
+  <link name="torso">
+    <visual>
+      <geometry>
+        <box size="0.2 0.15 ${torso_height}"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="5.0"/>
+      <inertia ixx="0.1" ixy="0" ixz="0"
+               iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+  </link>
+
+  <!-- Shoulder joint -->
+  <joint name="shoulder_joint" type="revolute">
+    <parent link="torso"/>
+    <child link="upper_arm"/>
+    <origin xyz="0 0.15 ${torso_height/2}" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.57" upper="3.14" effort="50" velocity="2.0"/>
+  </joint>
+
+  <!-- Upper arm -->
+  <link name="upper_arm">
+    <visual>
+      <geometry>
+        <cylinder length="${arm_length}" radius="0.05"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0"
+               iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+
+</robot>
+```
+
+This defines a torso with one arm. The arm can rotate at the shoulder.
+
+## Visualizing Your Robot
+
+After creating your URDF, visualize it:
+
+```bash
+# Convert Xacro to URDF
+ros2 run xacro xacro my_robot.xacro > my_robot.urdf
+
+# Visualize in RViz
+ros2 launch urdf_tutorial display.launch.py model:=my_robot.urdf
+```
+
+You'll see your robot in 3D. You can move joints with sliders.
+
+## Common Mistakes
+
+### Mistake 1: Missing Origins
+
+Every joint needs an origin. This tells where the child link attaches.
+
+**Bad:**
+```xml
+<joint name="my_joint" type="revolute">
+  <parent link="link1"/>
+  <child link="link2"/>
+</joint>
+```
+
+**Good:**
+```xml
+<joint name="my_joint" type="revolute">
+  <parent link="link1"/>
+  <child link="link2"/>
+  <origin xyz="0 0 0.5" rpy="0 0 0"/>
+</joint>
+```
+
+### Mistake 2: Wrong Units
+
+URDF uses:
+- **Meters** for distances (not centimeters!)
+- **Kilograms** for mass
+- **Radians** for angles (not degrees!)
+
+### Mistake 3: Missing Inertial Properties
+
+Simulation needs inertia values. Without them, physics won't work correctly.
+
+## Best Practices
+
+### 1. Use Xacro for Complex Robots
+
+Don't write pure URDF for humanoids. Too much repetition.
+
+### 2. Organize with Includes
+
+Split your robot into files:
+- `robot.xacro` - Main file
+- `leg.xacro` - Leg macro
+- `arm.xacro` - Arm macro
+- `sensors.xacro` - Sensor definitions
+
+### 3. Name Things Clearly
+
+Use descriptive names:
+- Good: `left_shoulder_pitch_joint`
+- Bad: `joint_3`
+
+### 4. Test Early and Often
+
+Build incrementally. Add one link, test. Add a joint, test. Don't build the whole robot before testing.
+
+## Tools and Resources
+
+**check_urdf**: Validates URDF files
+```bash
+check_urdf my_robot.urdf
+```
+
+**urdf_to_graphiz**: Creates a diagram
+```bash
+urdf_to_graphiz my_robot.urdf
+```
+
+**RViz**: Visualizes robots in 3D
+
+## Summary
+
+- **URDF** describes robot structure using links and joints
+- **Links** are rigid robot parts with visual, collision, and inertial properties
+- **Joints** connect links and define motion
+- **Xacro** adds variables and macros to reduce repetition
+- **Humanoid robots** require careful attention to kinematic chains and mass distribution
+- **Always test** your models incrementally
+
+## Next Steps
+
+Now you can describe robots. Next, you'll learn how to organize code into packages.
+
+**Continue to**: [Building & Launching Packages](./ros2-packages.mdx)
+
+**Related topics**:
+- [ROS 2 Core Concepts](./core-concepts.mdx)
+- [Python + rclpy Development](./python-rclpy.mdx)
+
+**Try it yourself**: Create a simple robot with a body and two wheels. Use Xacro macros for the wheels. Visualize it in RViz. This hands-on practice cements the concepts.

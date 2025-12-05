@@ -80,7 +80,11 @@ Add a LaserScan display and subscribe to `/lidar` topic.
 
 ### Processing Depth Data in ROS 2
 
-```python
+```python title="depth_processor.py"
+# Library: rclpy v3.3.7, cv_bridge v3.2.1
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -169,7 +173,11 @@ def main():
 
 ### Reading IMU Data in ROS 2
 
-```python
+```python title="imu_reader.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Imu
@@ -194,7 +202,11 @@ class IMUReader(Node):
 
 Combining multiple sensor inputs for robust perception:
 
-```python
+```python title="sensor_fusion.py"
+# Library: rclpy v3.3.7
+# Last updated: 2025-12-05
+# Tested on: ROS 2 Humble, Python 3.10
+
 class SensorFusion(Node):
     def __init__(self):
         super().__init__('sensor_fusion')

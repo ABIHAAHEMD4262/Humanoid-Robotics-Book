@@ -1,0 +1,321 @@
+# 1.4 Actions - Long-Running Tasks
+
+**Estimated Reading Time**: 7 minutes
+**Prerequisites**: 1.1 Nodes, 1.2 Topics, 1.3 Services
+**Difficulty**: Beginner
+
+## Introduction
+
+Actions are for tasks that take time and need feedback. Think "navigate to the kitchen" or "pick up the cup."
+
+Actions combine the best of topics and services. They provide feedback during execution. You can cancel them if needed.
+
+## How Actions Work
+
+**Action Server** performs the long-running task. It sends feedback updates.
+
+**Action Client** sends a goal. It receives feedback. It can cancel if needed.
+
+Unlike services, actions don't block. The client stays responsive.
+
+### The Food Order Analogy
+
+**Type**: Analogy
+
+**Context**: You order food at a restaurant. It takes 20 minutes to prepare.
+
+**Explanation**: You place your order. This is the goal. The kitchen starts cooking. Every 5 minutes, the waiter updates you: "Your order is 25% done." This is feedback. You stay at your table. You can talk. You can cancel the order if you change your mind. After 20 minutes, your food arrives. This is the result.
+
+**Takeaway**: Actions provide feedback during long operations. Clients stay responsive. Cancellation is possible.
+
+## When to Use Actions
+
+Use actions for:
+- Navigation (takes seconds or minutes)
+- Manipulation (pick and place)
+- Any task where you want progress updates
+
+**Don't use actions for**:
+- Quick requests (use services)
+- Continuous streams (use topics)
+
+**Rule of thumb**: If it takes more than 1 second AND you want progress updates, use an action.
+
+## Action Components
+
+Actions have three parts:
+
+1. **Goal**: What you want to achieve
+2. **Feedback**: Progress updates during execution
+3. **Result**: Final outcome when done
+
+This is more powerful than services. Services only have request and result.
+
+## Why Not Use Services?
+
+Services block while waiting. If navigation takes 2 minutes, your client is stuck. You can't cancel. You don't get updates.
+
+Actions solve this. The client stays responsive. It gets updates. It can cancel.
+
+### Example 1: Navigation Comparison
+
+**Type**: Comparison
+
+**Context**: You want your robot to navigate to a target position 10 meters away.
+
+**Explanation**:
+
+**With a service**:
+- Send navigation request
+- Wait 2 minutes (blocked)
+- Get result
+- No progress updates
+- Can't cancel
+- If robot gets stuck, you wait 2 minutes to find out
+
+**With an action**:
+- Send navigation goal
+- Receive feedback every second: "3m traveled", "5m traveled", "7m traveled"
+- Client stays responsive
+- Can cancel anytime
+- Know immediately if robot is stuck
+
+**Takeaway**: Actions are essential for long tasks. They provide visibility and control.
+
+## Action Structure Example
+
+Here's what a simple action looks like:
+
+### Fibonacci Action Definition
+
+```
+# Goal
+int32 order
+---
+# Result
+int32[] sequence
+---
+# Feedback
+int32[] partial_sequence
+```
+
+Three sections separated by `---`:
+1. **Goal**: What the client wants
+2. **Result**: What the server returns when done
+3. **Feedback**: Progress updates during execution
+
+## Conceptual Action Server
+
+Here's the concept (simplified for clarity):
+
+```python
+# Conceptual action server structure
+class FibonacciActionServer(Node):
+    def execute_callback(self, goal_handle):
+        # 1. Extract goal
+        order = goal_handle.request.order
+
+        # 2. Initialize feedback
+        feedback = Fibonacci.Feedback()
+
+        # 3. Process goal and send periodic feedback
+        sequence = [0, 1]
+        for i in range(1, order):
+            # Calculate next number
+            sequence.append(sequence[i] + sequence[i-1])
+
+            # Send feedback
+            feedback.partial_sequence = sequence
+            goal_handle.publish_feedback(feedback)
+
+            # Simulate work
+            time.sleep(1)
+
+        # 4. Send final result
+        result = Fibonacci.Result()
+        result.sequence = sequence
+        goal_handle.succeed()
+        return result
+```
+
+**Key concepts**:
+- `execute_callback`: Main function that processes the goal
+- `goal_handle.publish_feedback()`: Send progress updates
+- `goal_handle.succeed()`: Mark goal as complete
+- `return result`: Final outcome
+
+## Conceptual Action Client
+
+Here's the concept (simplified):
+
+```python
+# Conceptual action client structure
+class FibonacciActionClient(Node):
+    def send_goal(self, order):
+        # 1. Create goal
+        goal = Fibonacci.Goal()
+        goal.order = order
+
+        # 2. Send goal asynchronously
+        send_goal_future = self.client.send_goal_async(
+            goal,
+            feedback_callback=self.feedback_callback
+        )
+
+        # 3. Wait for goal acceptance
+        goal_handle = await send_goal_future
+
+        # 4. Wait for result
+        result_future = goal_handle.get_result_async()
+        result = await result_future
+
+        return result.result
+
+    def feedback_callback(self, feedback):
+        # Called automatically when feedback arrives
+        print(f'Progress: {feedback.feedback.partial_sequence}')
+```
+
+**Key concepts**:
+- `send_goal_async()`: Send goal without blocking
+- `feedback_callback`: Receives progress updates
+- `get_result_async()`: Wait for final result
+- Callbacks keep client responsive
+
+## Action States
+
+Actions progress through states:
+
+1. **Pending**: Goal sent, waiting for server to accept
+2. **Active**: Server is working on the goal
+3. **Succeeded**: Goal completed successfully
+4. **Aborted**: Server stopped due to error
+5. **Canceled**: Client canceled the goal
+
+You can check state and respond accordingly.
+
+## Canceling Actions
+
+Clients can cancel goals:
+
+```python
+# Send goal
+goal_handle = await client.send_goal_async(goal)
+
+# Later, cancel it
+cancel_future = goal_handle.cancel_goal_async()
+```
+
+The server handles cancellation gracefully. It stops processing. Returns a canceled state.
+
+## Checking Actions
+
+List all available actions:
+```bash
+ros2 action list
+```
+
+See action details:
+```bash
+ros2 action info /fibonacci
+```
+
+Send a goal from command line:
+```bash
+ros2 action send_goal /fibonacci example_interfaces/action/Fibonacci "{order: 5}"
+```
+
+You'll see feedback updates and final result.
+
+## Real Robot Example
+
+### Example 2: Humanoid Walking
+
+**Type**: Scenario
+
+**Context**: Your humanoid robot needs to walk 5 meters forward.
+
+**Explanation**: You send a walking action goal: "Walk 5 meters." The robot starts walking. Every second, it sends feedback: "0.5m walked", "1.0m walked", "1.5m walked". You see progress in real-time. If the robot trips at 2 meters, you get feedback immediately. You can cancel the walk. You can send a new goal. The robot is responsive. Without actions, you'd send a command and wait blindly for 20 seconds.
+
+**Takeaway**: Actions make robots controllable and observable during long tasks.
+
+## Choosing the Right Tool
+
+Here's a decision guide:
+
+**Use Topics when:**
+- Data flows continuously
+- You don't need confirmation
+- Multiple listeners might exist
+- Example: Sensor data, robot state
+
+**Use Services when:**
+- You need a reply
+- The task is quick (< 1 second)
+- It's a one-time request
+- Example: Get current position, calculate something
+
+**Use Actions when:**
+- The task takes time (> 1 second)
+- You want progress updates
+- You might need to cancel
+- Example: Navigation, manipulation, long computations
+
+## Common Mistakes
+
+### Mistake 1: Using Actions for Quick Tasks
+
+```python
+# Bad - action overhead for 0.1 second task
+action = client.send_goal(turn_led_on)
+```
+
+Use a service instead. Actions add complexity.
+
+### Mistake 2: Not Handling Feedback
+
+```python
+# Bad - ignores feedback
+goal_handle = client.send_goal_async(goal)
+# No feedback callback registered
+```
+
+Always register a feedback callback. Otherwise, why use actions?
+
+### Mistake 3: Blocking on Actions
+
+```python
+# Bad - defeats the purpose of actions
+result = client.send_goal(goal)  # Synchronous - blocks everything
+```
+
+Use asynchronous calls. Keep your client responsive.
+
+## Summary
+
+- Actions enable long-running tasks with feedback and cancellation
+- Action servers process goals and send feedback
+- Action clients stay responsive while receiving updates
+- Actions have three parts: goal, result, and feedback
+- Use actions when tasks take >1 second and need progress visibility
+- Clients can cancel actions at any time
+
+## Next Steps
+
+You've completed Chapter 1! You understand all four communication patterns. Next, learn Python development with rclpy.
+
+**Continue to**: [Chapter 2: Python Development](../chapter2-python-rclpy/index.mdx)
+
+**Related topics**:
+- [1.1 Nodes](./1.1-nodes.mdx)
+- [1.2 Topics](./1.2-topics.mdx)
+- [1.3 Services](./1.3-services.mdx)
+- [Chapter 1 Overview](./index.mdx)
+
+**Try it yourself**:
+1. Study the Fibonacci action example in detail
+2. Understand the goal/feedback/result structure
+3. Think of a real robot task that needs actions
+4. Consider when topics or services would be better
+
+**Challenge**: Design the action interface (goal/feedback/result) for a "Pick and Place" task for a humanoid robot. What fields would each section need?

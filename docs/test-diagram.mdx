@@ -1,0 +1,117 @@
+---
+sidebar_position: 999
+---
+
+# Diagram Component Test
+
+This is a test page to verify the Diagram component is working correctly.
+
+## Example Usage
+
+Below is an example of the Diagram component in action:
+
+import Diagram from '@site/src/components/Diagram';
+
+<Diagram
+  src="/img/logo.svg"
+  alt="Docusaurus logo showing a dinosaur mascot with the Docusaurus branding"
+  caption="Figure 1: Example diagram using existing logo asset"
+  maxWidth="400px"
+/>
+
+## Features Demonstrated
+
+1. **Lazy Loading**: The image loads only when scrolling into view
+2. **Accessibility**: Proper alt text and ARIA labels
+3. **Responsive**: Adapts to different screen sizes
+4. **Error Handling**: Shows error state if image fails to load
+5. **Loading State**: Skeleton shimmer while loading
+
+## Test Error Handling
+
+This diagram intentionally has a broken path to test error handling:
+
+<Diagram
+  src="/img/diagrams/non-existent-file.webp"
+  alt="This diagram does not exist and should show an error state"
+  caption="Figure 2: Error state demonstration"
+  maxWidth="500px"
+/>
+
+## Different Sizes
+
+Small diagram:
+
+<Diagram
+  src="/img/logo.svg"
+  alt="Small logo"
+  caption="Figure 3: Small diagram (300px max width)"
+  maxWidth="300px"
+/>
+
+Large diagram:
+
+<Diagram
+  src="/img/logo.svg"
+  alt="Large logo"
+  caption="Figure 4: Large diagram (800px max width)"
+  maxWidth="800px"
+/>
+
+---
+
+# Callout Component Test
+
+Testing the custom Callout component with different types:
+
+import Callout from '@site/src/components/Callout';
+
+## Tip Callout
+
+<Callout type="tip" title="Pro Tip">
+Always test your components locally before deploying to production. Use `npm start` to see changes in real-time.
+</Callout>
+
+## Note Callout
+
+<Callout type="note">
+This is a default note without a custom title. It uses the default "Note" title.
+</Callout>
+
+## Warning Callout
+
+<Callout type="warning" title="Common Pitfall">
+Don't confuse sensor calibration with sensor fusion! These are different concepts that beginners often mix up.
+</Callout>
+
+## Danger Callout
+
+<Callout type="danger" title="Critical Warning">
+Never run this command in production without proper backups. Data loss may occur!
+</Callout>
+
+## Info Callout
+
+<Callout type="info" title="Additional Context">
+For more information about Physical AI systems, see the introduction module.
+</Callout>
+
+## Nested Content in Callout
+
+<Callout type="tip" title="Multi-Format Content">
+Callouts can contain:
+- Bullet lists
+- **Bold text**
+- `inline code`
+- [Links to other pages](/docs/intro)
+
+And multiple paragraphs work too!
+</Callout>
+
+---
+
+## Notes
+
+- Remove this test file before production deployment
+- Replace with actual chapter content
+- Location: `docs/test-diagram.mdx`
