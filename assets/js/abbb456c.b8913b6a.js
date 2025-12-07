@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkhumanoid_robotics_book=globalThis.webpackChunkhumanoid_robotics_book||[]).push([[9174],{236:o=>{o.exports=JSON.parse('{"tags":[{"label":"introduction","permalink":"/Humanoid-Robotics-Book/docs/tags/introduction","count":1},{"label":"getting-started","permalink":"/Humanoid-Robotics-Book/docs/tags/getting-started","count":1}]}')}}]);
