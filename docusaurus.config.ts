@@ -1,13 +1,18 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+// import path from 'path'; // Temporarily disabled for chatbot plugin
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
   title: 'Physical AI & Humanoid Robotics Book',
   tagline: 'Embodied Intelligence with ROS 2, Isaac Sim, and Vision-Language-Action Models',
-  
+
+  // Custom fields for chatbot integration
+  customFields: {
+    chatbotApiUrl: process.env.CHATBOT_API_URL || 'https://abihacodes-rag-chatbot-backend.hf.space',
+  },
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -66,6 +71,16 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+
+  // plugins: [
+  //   // RAG Chatbot Plugin - Floating AI assistant (temporarily disabled)
+  //   [
+  //     path.resolve(__dirname, './chatbot/docusaurus-plugin/src'),
+  //     {
+  //       // Configuration options
+  //     },
+  //   ],
+  // ],
 
   themes: [
     [
