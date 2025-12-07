@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 
-function ChatbotWidget() {
+function ChatbotWidgetInner() {
   const { siteConfig } = useDocusaurusContext();
   const chatbotApiUrl = siteConfig.customFields?.chatbotApiUrl || 'http://localhost:8000';
 
@@ -466,4 +467,10 @@ function ChatbotWidget() {
   );
 }
 
-export default ChatbotWidget;
+export default function ChatbotWidget() {
+  return (
+    <BrowserOnly>
+      {() => <ChatbotWidgetInner />}
+    </BrowserOnly>
+  );
+}
