@@ -115,6 +115,32 @@ function ChatbotWidgetInner() {
     }
   };
 
+  // Get responsive styles based on window width
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    handleResize(); // Check on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Responsive button styles
+  const buttonSize = isMobile ? '50px' : '60px';
+  const buttonBottom = isMobile ? '16px' : '20px';
+  const buttonRight = isMobile ? '16px' : '20px';
+  const buttonFontSize = isMobile ? '20px' : '24px';
+
+  // Responsive modal styles
+  const modalWidth = isMobile ? 'calc(100vw - 16px)' : 'min(380px, calc(100vw - 40px))';
+  const modalHeight = isMobile ? 'calc(100vh - 80px)' : 'min(600px, calc(100vh - 120px))';
+  const modalBottom = isMobile ? '72px' : '90px';
+  const modalRight = isMobile ? '8px' : '20px';
+  const modalBorderRadius = isMobile ? '12px 12px 0 0' : '12px';
+
   return (
     <>
       {/* Floating Button */}
@@ -122,10 +148,10 @@ function ChatbotWidgetInner() {
         onClick={() => setIsOpen(!isOpen)}
         style={{
           position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          width: '60px',
-          height: '60px',
+          bottom: buttonBottom,
+          right: buttonRight,
+          width: buttonSize,
+          height: buttonSize,
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           border: 'none',
@@ -137,7 +163,7 @@ function ChatbotWidgetInner() {
           justifyContent: 'center',
           transition: 'all 0.3s ease',
           color: 'white',
-          fontSize: '24px',
+          fontSize: buttonFontSize,
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.1)';
@@ -156,14 +182,16 @@ function ChatbotWidgetInner() {
         <div
           style={{
             position: 'fixed',
-            bottom: '90px',
-            right: '20px',
+            bottom: modalBottom,
+            right: modalRight,
+            left: isMobile ? '8px' : 'auto',
             top: 'auto',
-            width: '380px',
-            maxHeight: 'calc(100vh - 120px)',
-            height: '600px',
+            width: isMobile ? 'auto' : modalWidth,
+            maxWidth: isMobile ? 'none' : '380px',
+            maxHeight: modalHeight,
+            height: isMobile ? modalHeight : 'auto',
             background: 'var(--ifm-background-color)',
-            borderRadius: '12px',
+            borderRadius: modalBorderRadius,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             zIndex: 999,
             display: 'flex',
@@ -177,9 +205,9 @@ function ChatbotWidgetInner() {
             style={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
-              padding: '16px',
+              padding: isMobile ? '12px 16px' : '16px',
               fontWeight: 'bold',
-              fontSize: '18px',
+              fontSize: isMobile ? '16px' : '18px',
             }}
           >
             Physical AI Assistant
@@ -190,32 +218,32 @@ function ChatbotWidgetInner() {
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '16px',
+              padding: isMobile ? '12px' : '16px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: isMobile ? '10px' : '12px',
             }}
           >
             {messages.length === 0 && (
-              <div style={{ padding: '12px' }}>
+              <div style={{ padding: isMobile ? '8px' : '12px' }}>
                 <div style={{
                   color: 'var(--ifm-color-emphasis-800)',
                   textAlign: 'center',
-                  marginBottom: '20px',
-                  fontSize: '16px',
+                  marginBottom: isMobile ? '16px' : '20px',
+                  fontSize: isMobile ? '15px' : '16px',
                   fontWeight: 'bold'
                 }}>
                   👋 Physical AI Assistant
                 </div>
                 <div style={{
                   color: 'var(--ifm-color-emphasis-600)',
-                  fontSize: '14px',
-                  marginBottom: '16px',
+                  fontSize: isMobile ? '13px' : '14px',
+                  marginBottom: isMobile ? '12px' : '16px',
                   textAlign: 'center'
                 }}>
                   Ask me anything about the book! Try these:
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '8px' }}>
                   {[
                     { q: "What is ROS 2?", icon: "🤖" },
                     { q: "Explain URDF and robot modeling", icon: "📐" },
@@ -228,14 +256,14 @@ function ChatbotWidgetInner() {
                         setInputValue(faq.q);
                       }}
                       style={{
-                        padding: '12px',
-                        borderRadius: '8px',
+                        padding: isMobile ? '10px' : '12px',
+                        borderRadius: isMobile ? '6px' : '8px',
                         border: '1px solid var(--ifm-color-emphasis-300)',
                         background: 'var(--ifm-color-emphasis-100)',
                         color: 'var(--ifm-font-color-base)',
                         cursor: 'pointer',
                         textAlign: 'left',
-                        fontSize: '13px',
+                        fontSize: isMobile ? '12px' : '13px',
                         transition: 'all 0.2s ease',
                       }}
                       onMouseEnter={(e) => {
@@ -270,13 +298,13 @@ function ChatbotWidgetInner() {
                 key={idx}
                 style={{
                   alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
+                  maxWidth: isMobile ? '90%' : '85%',
                   animation: 'fadeIn 0.3s ease-in',
                 }}
               >
                 <div
                   style={{
-                    padding: '12px 16px',
+                    padding: isMobile ? '10px 12px' : '12px 16px',
                     borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                     background: msg.role === 'user'
                       ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
@@ -285,7 +313,9 @@ function ChatbotWidgetInner() {
                       : 'var(--ifm-color-emphasis-100)',
                     color: msg.role === 'user' ? 'white' : 'var(--ifm-font-color-base)',
                     wordWrap: 'break-word',
-                    fontSize: '14px',
+                    overflowWrap: 'break-word',
+                    wordBreak: 'break-word',
+                    fontSize: isMobile ? '13px' : '14px',
                     lineHeight: '1.6',
                     boxShadow: msg.role === 'user'
                       ? '0 2px 8px rgba(102, 126, 234, 0.3)'
@@ -297,17 +327,17 @@ function ChatbotWidgetInner() {
 
                 {msg.citations && msg.citations.length > 0 && (
                   <div style={{
-                    marginTop: '12px',
-                    padding: '10px',
+                    marginTop: isMobile ? '10px' : '12px',
+                    padding: isMobile ? '8px' : '10px',
                     background: 'var(--ifm-color-emphasis-50)',
-                    borderRadius: '8px',
+                    borderRadius: isMobile ? '6px' : '8px',
                     border: '1px solid var(--ifm-color-emphasis-200)',
                   }}>
                     <div style={{
-                      fontSize: '12px',
+                      fontSize: isMobile ? '11px' : '12px',
                       fontWeight: 'bold',
                       color: 'var(--ifm-color-emphasis-700)',
-                      marginBottom: '8px',
+                      marginBottom: isMobile ? '6px' : '8px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px'
@@ -322,10 +352,10 @@ function ChatbotWidgetInner() {
                         rel="noopener noreferrer"
                         style={{
                           display: 'block',
-                          padding: '8px',
-                          marginBottom: i < msg.citations.length - 1 ? '6px' : '0',
+                          padding: isMobile ? '6px' : '8px',
+                          marginBottom: i < msg.citations.length - 1 ? (isMobile ? '4px' : '6px') : '0',
                           background: 'var(--ifm-background-color)',
-                          borderRadius: '6px',
+                          borderRadius: isMobile ? '4px' : '6px',
                           textDecoration: 'none',
                           border: '1px solid var(--ifm-color-emphasis-200)',
                           transition: 'all 0.2s ease',
@@ -340,26 +370,36 @@ function ChatbotWidgetInner() {
                         }}
                       >
                         <div style={{
-                          fontSize: '13px',
+                          fontSize: isMobile ? '12px' : '13px',
                           color: '#667eea',
                           fontWeight: '500',
-                          marginBottom: '4px'
+                          marginBottom: '4px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
                         }}>
                           📖 {citation.section_title}
                         </div>
                         <div style={{
-                          fontSize: '11px',
+                          fontSize: isMobile ? '10px' : '11px',
                           color: 'var(--ifm-color-emphasis-600)',
                           display: 'flex',
                           justifyContent: 'space-between',
-                          alignItems: 'center'
+                          alignItems: 'center',
+                          gap: '8px'
                         }}>
-                          <span>{citation.chapter_title}</span>
+                          <span style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            flex: 1
+                          }}>{citation.chapter_title}</span>
                           <span style={{
                             background: 'var(--ifm-color-emphasis-200)',
                             padding: '2px 6px',
                             borderRadius: '4px',
-                            fontSize: '10px'
+                            fontSize: isMobile ? '9px' : '10px',
+                            flexShrink: 0
                           }}>
                             {(citation.relevance_score * 100).toFixed(0)}%
                           </span>
@@ -391,7 +431,7 @@ function ChatbotWidgetInner() {
           {/* Input */}
           <div
             style={{
-              padding: '16px',
+              padding: isMobile ? '12px' : '16px',
               borderTop: '1px solid var(--ifm-color-emphasis-200)',
             }}
           >
@@ -399,18 +439,26 @@ function ChatbotWidgetInner() {
             {selectedText && (
               <div
                 style={{
-                  marginBottom: '8px',
-                  padding: '8px',
+                  marginBottom: isMobile ? '6px' : '8px',
+                  padding: isMobile ? '6px 8px' : '8px',
                   background: 'var(--ifm-color-emphasis-100)',
                   borderRadius: '6px',
-                  fontSize: '12px',
+                  fontSize: isMobile ? '11px' : '12px',
                   color: 'var(--ifm-color-emphasis-700)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  gap: '8px',
                 }}
               >
-                <span>📄 Text selected: "{selectedText.substring(0, 50)}..."</span>
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1
+                }}>
+                  📄 Text selected: "{selectedText.substring(0, isMobile ? 30 : 50)}..."
+                </span>
                 <button
                   onClick={() => setSelectedText('')}
                   style={{
@@ -426,7 +474,7 @@ function ChatbotWidgetInner() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: isMobile ? '6px' : '8px' }}>
               <input
                 type="text"
                 value={inputValue}
@@ -436,28 +484,31 @@ function ChatbotWidgetInner() {
                 disabled={isLoading}
                 style={{
                   flex: 1,
-                  padding: '10px',
-                  borderRadius: '8px',
+                  padding: isMobile ? '8px 10px' : '10px',
+                  borderRadius: isMobile ? '6px' : '8px',
                   border: '1px solid var(--ifm-color-emphasis-300)',
                   background: 'var(--ifm-background-color)',
                   color: 'var(--ifm-font-color-base)',
                   outline: 'none',
+                  fontSize: isMobile ? '14px' : '16px',
                 }}
               />
               <button
                 onClick={handleSend}
                 disabled={isLoading || !inputValue.trim()}
                 style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
+                  padding: isMobile ? '8px 12px' : '10px 16px',
+                  borderRadius: isMobile ? '6px' : '8px',
                   border: 'none',
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: 'white',
                   cursor: isLoading || !inputValue.trim() ? 'not-allowed' : 'pointer',
                   opacity: isLoading || !inputValue.trim() ? 0.5 : 1,
+                  fontSize: isMobile ? '13px' : '14px',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Send
+                {isMobile ? '➤' : 'Send'}
               </button>
             </div>
           </div>
