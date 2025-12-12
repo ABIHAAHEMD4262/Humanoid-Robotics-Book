@@ -115,6 +115,12 @@ const config: Config = {
         },
         // {to: '/blog', label: 'Blog', position: 'left'}, // Removed as per plan
         {
+          to: '/signin',
+          label: 'Sign In',
+          position: 'right',
+          className: 'navbar-signin-btn',
+        },
+        {
           href: 'https://github.com/ABIHAAHEMD4262/Humanoid-Robotics-Book',
           label: 'GitHub',
           position: 'right',

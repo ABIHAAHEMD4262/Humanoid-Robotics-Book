@@ -1,0 +1,464 @@
+/* ========================================
+   Glassmorphism Navbar Styling
+   ======================================== */
+
+/* Glassmorphism effect for navbar */
+.navbar {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-theme='dark'] .navbar {
+  background: rgba(26, 32, 44, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Navbar on scroll effect */
+.navbar--fixed-top {
+  backdrop-filter: blur(25px) saturate(200%) !important;
+}
+
+/* Navbar title styling with gradient */
+.navbar__title {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.navbar__title:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+/* ========================================
+   Search Bar Styling
+   ======================================== */
+
+/* Center the search bar - visible on ALL pages */
+.navbar-search-center,
+.navbar__item.navbar__search-container,
+.navbar__search {
+  flex: 1;
+  display: flex !important;
+  justify-content: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Enhanced search bar - support multiple search plugins */
+.DocSearch-Button,
+.aa-DetachedSearchButton,
+button[class*="searchButton"] {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 2px solid rgba(103, 126, 234, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(103, 126, 234, 0.1) !important;
+  min-width: 300px !important;
+}
+
+[data-theme='dark'] .DocSearch-Button,
+[data-theme='dark'] .aa-DetachedSearchButton,
+[data-theme='dark'] button[class*="searchButton"] {
+  background: rgba(45, 55, 72, 0.6) !important;
+  border: 2px solid rgba(103, 126, 234, 0.3) !important;
+}
+
+.DocSearch-Button:hover,
+.aa-DetachedSearchButton:hover,
+button[class*="searchButton"]:hover {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(103, 126, 234, 0.5) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(103, 126, 234, 0.2) !important;
+}
+
+[data-theme='dark'] .DocSearch-Button:hover,
+[data-theme='dark'] .aa-DetachedSearchButton:hover,
+[data-theme='dark'] button[class*="searchButton"]:hover {
+  background: rgba(45, 55, 72, 0.9) !important;
+  border-color: rgba(103, 126, 234, 0.6) !important;
+}
+
+.DocSearch-Search-Icon,
+.aa-SubmitIcon {
+  color: #667eea !important;
+}
+
+/* ========================================
+   GitHub Link Styling
+   ======================================== */
+
+.navbar-github-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-right: 12px;
+}
+
+[data-theme='dark'] .navbar-github-link {
+  background: rgba(45, 55, 72, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar-github-link::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  display: block;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23181717' d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+[data-theme='dark'] .navbar-github-link::before {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23ffffff' d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+}
+
+.navbar-github-link:hover {
+  background: rgba(103, 126, 234, 0.15);
+  border-color: rgba(103, 126, 234, 0.4);
+  transform: translateY(-2px) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(103, 126, 234, 0.2);
+}
+
+/* ========================================
+   Sign In Button Styling (Primary CTA)
+   ======================================== */
+
+.navbar-signin-btn {
+  padding: 8px 24px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-right: 12px !important;
+  text-decoration: none !important;
+  box-shadow: 0 4px 12px rgba(103, 126, 234, 0.3) !important;
+}
+
+.navbar-signin-btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(103, 126, 234, 0.4) !important;
+  filter: brightness(1.1) !important;
+  color: white !important;
+}
+
+.navbar-signin-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Subtle pulse animation */
+@keyframes gentlePulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(103, 126, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(103, 126, 234, 0.4);
+  }
+}
+
+.navbar-signin-btn {
+  animation: gentlePulse 3s infinite;
+}
+
+/* ========================================
+   Color Mode Toggle Styling
+   ======================================== */
+
+.navbar__item button[class*="toggle"] {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 2px solid rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+[data-theme='dark'] .navbar__item button[class*="toggle"] {
+  background: rgba(45, 55, 72, 0.6) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.navbar__item button[class*="toggle"]:hover {
+  background: rgba(103, 126, 234, 0.15) !important;
+  border-color: rgba(103, 126, 234, 0.4) !important;
+  transform: translateY(-2px) rotate(-10deg) !important;
+  box-shadow: 0 4px 12px rgba(103, 126, 234, 0.2) !important;
+}
+
+/* ========================================
+   Book Link Styling
+   ======================================== */
+
+.navbar__link {
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  transition: all 0.3s ease !important;
+  font-weight: 600 !important;
+}
+
+.navbar__link:hover {
+  background: rgba(103, 126, 234, 0.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+.navbar__link--active {
+  background: rgba(103, 126, 234, 0.15) !important;
+  color: #667eea !important;
+}
+
+[data-theme='dark'] .navbar__link--active {
+  color: #a5b4fc !important;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar {
+  animation: slideDown 0.3s ease-out;
+}
+
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+/* Tablets and smaller laptops */
+@media (max-width: 996px) {
+  .navbar__title {
+    font-size: 0.95rem;
+  }
+
+  .navbar-search-center,
+  .navbar__search {
+    max-width: 350px;
+  }
+
+  .DocSearch-Button,
+  .aa-DetachedSearchButton {
+    min-width: 250px !important;
+  }
+
+  .navbar-github-link {
+    width: 36px;
+    height: 36px;
+    margin-right: 8px;
+  }
+
+  .navbar-signin-btn {
+    padding: 6px 16px !important;
+    font-size: 0.9rem !important;
+    margin-right: 8px !important;
+  }
+
+  .navbar__item button[class*="toggle"] {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.5rem !important;
+  }
+
+  .navbar__title {
+    font-size: 0.85rem;
+  }
+
+  /* Reduce search bar width to prevent overlap */
+  .navbar-search-center,
+  .navbar__search {
+    max-width: 220px;
+    flex: 0 1 220px;
+  }
+
+  .DocSearch-Button,
+  .aa-DetachedSearchButton,
+  button[class*="searchButton"] {
+    min-width: 180px !important;
+    padding: 6px 10px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .navbar-github-link {
+    width: 32px;
+    height: 32px;
+    margin-right: 6px;
+  }
+
+  .navbar-github-link::before {
+    width: 20px;
+    height: 20px;
+  }
+
+  .navbar-signin-btn {
+    padding: 6px 14px !important;
+    font-size: 0.85rem !important;
+    margin-right: 6px !important;
+  }
+
+  .navbar__item button[class*="toggle"] {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 576px) {
+  /* Hide search bar on very small screens to prevent overlap */
+  .navbar-search-center,
+  .navbar__search,
+  .navbar__item.navbar__search-container {
+    display: none !important;
+  }
+
+  .navbar {
+    padding: 0.4rem 0.5rem !important;
+  }
+
+  .navbar__title {
+    font-size: 0.8rem;
+  }
+
+  /* Ensure right-side items stay visible and don't overlap */
+  .navbar__items--right {
+    display: flex !important;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .navbar-github-link {
+    width: 28px;
+    height: 28px;
+    margin-right: 4px;
+  }
+
+  .navbar-github-link::before {
+    width: 18px;
+    height: 18px;
+  }
+
+  .navbar-signin-btn {
+    padding: 5px 10px !important;
+    font-size: 0.75rem !important;
+    margin-right: 4px !important;
+    white-space: nowrap;
+  }
+
+  .navbar__item button[class*="toggle"] {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}
+
+/* Extra small devices - compact mode */
+@media (max-width: 400px) {
+  .navbar-signin-btn {
+    padding: 4px 8px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .navbar-github-link {
+    width: 24px;
+    height: 24px;
+  }
+
+  .navbar-github-link::before {
+    width: 16px;
+    height: 16px;
+  }
+
+  .navbar__item button[class*="toggle"] {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+/* ========================================
+   Mobile Menu Styling
+   ======================================== */
+
+.navbar-sidebar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+[data-theme='dark'] .navbar-sidebar {
+  background: rgba(26, 32, 44, 0.95) !important;
+}
+
+.navbar-sidebar__item {
+  border-radius: 8px;
+  margin: 4px 0;
+  transition: all 0.2s ease;
+}
+
+.navbar-sidebar__item:hover {
+  background: rgba(103, 126, 234, 0.1);
+  transform: translateX(4px);
+}
+
+/* Sign In button in mobile sidebar */
+.navbar-sidebar .navbar-signin-btn {
+  display: inline-block;
+  margin: 8px 16px;
+  text-align: center;
+}
+
+/* Ensure navbar items are visible on mobile */
+@media (max-width: 996px) {
+  /* Keep Sign In visible in navbar on tablets */
+  .navbar__item.navbar__link[href*="signin"] {
+    display: inline-block !important;
+  }
+}
+
+/* Force visibility of right navbar items on small screens */
+@media (max-width: 576px) {
+  .navbar__items--right .navbar__item {
+    display: inline-flex !important;
+  }
+
+  .navbar__items--right {
+    flex-shrink: 0;
+  }
+}

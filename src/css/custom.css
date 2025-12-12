@@ -3,6 +3,9 @@
  * Theme: Modern robotics with tech-forward aesthetics
  */
 
+/* Import navbar styling with glassmorphism effects */
+@import './navbar.css';
+
 /* ============================================
    PRIMARY THEME COLORS
    ============================================ */
