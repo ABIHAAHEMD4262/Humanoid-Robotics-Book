@@ -33,7 +33,7 @@ app.all('/api/auth/*', async (req, res) => {
     // Create a Web Request object from Express request
     const request = new Request(fullUrl, {
       method: req.method,
-      headers: new Headers(req.headers as HeadersInit),
+      headers: new Headers(req.headers as Record<string, string>),
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
     });
 

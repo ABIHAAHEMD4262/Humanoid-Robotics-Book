@@ -75,11 +75,8 @@ export class PersonalizationService {
         roboticsExperience: userProfile.roboticsExperience,
       };
 
-      // Transform the content based on the user profile with retry mechanism
-      const personalizedContent = await this.handleNetworkOperation(
-        () => ContentTransformer.transformContent(chapter.content, profileSnapshot),
-        `Failed to transform content for chapter ${request.chapterId}`
-      );
+      // Transform the content based on the user profile (synchronous operation)
+      const personalizedContent: string = ContentTransformer.transformContent(chapter.content, profileSnapshot);
 
       // Create the result
       const result: PersonalizationResult = {
