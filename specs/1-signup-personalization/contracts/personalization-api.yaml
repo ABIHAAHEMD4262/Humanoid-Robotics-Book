@@ -1,0 +1,142 @@
+# API Contract: Personalization Service
+
+## Overview
+This document describes the API endpoints for the personalization service that generates customized chapter content based on user profile data.
+
+## Base URL
+`/api/personalization`
+
+## Authentication
+All endpoints require a valid user session. The session is validated through Better-Auth middleware.
+
+## Endpoints
+
+### POST /personalize
+Generate personalized content for a specific chapter based on user profile.
+
+**Request:**
+```json
+{
+  "chapterId": "string",
+  "userId": "string"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "id": "string",
+  "chapterId": "string",
+  "userId": "string",
+  "content": "string (Markdown content)",
+  "profileSnapshot": {
+    "softwareSkillLevel": "string",
+    "hardwareType": "string",
+    "preferredLanguage": "string",
+    "roboticsExperience": "string"
+  },
+  "createdAt": "timestamp",
+  "cacheExpiry": "timestamp"
+}
+```
+
+**Response (Unauthorized - 401):**
+```json
+{
+  "error": "Unauthorized",
+  "message": "User must be authenticated to access personalization"
+}
+```
+
+**Response (Not Found - 404):**
+```json
+{
+  "error": "Chapter not found",
+  "message": "The requested chapter does not exist"
+}
+```
+
+**Response (Bad Request - 400):**
+```json
+{
+  "error": "Invalid request",
+  "message": "Missing required fields or invalid data"
+}
+```
+
+### GET /personalized/{chapterId}
+Retrieve previously generated personalized content for a chapter (with caching).
+
+**Path Parameters:**
+- `chapterId`: The ID of the chapter to retrieve
+
+**Query Parameters:**
+- `userId`: The ID of the user requesting the content
+
+**Response (Success - 200):**
+```json
+{
+  "id": "string",
+  "chapterId": "string",
+  "userId": "string",
+  "content": "string (Markdown content)",
+  "profileSnapshot": {
+    "softwareSkillLevel": "string",
+    "hardwareType": "string",
+    "preferredLanguage": "string",
+    "roboticsExperience": "string"
+  },
+  "createdAt": "timestamp",
+  "cacheExpiry": "timestamp"
+}
+```
+
+### POST /profile
+Update user profile information used for personalization.
+
+**Request:**
+```json
+{
+  "userId": "string",
+  "softwareSkillLevel": "string (beginner|intermediate|expert)",
+  "hardwareType": "string (cloud|PC|Jetson|robot)",
+  "preferredLanguage": "string",
+  "roboticsExperience": "string (none|hobbyist|professional)"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully"
+}
+```
+
+**Response (Validation Error - 400):**
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "field": "error_message"
+  }
+}
+```
+
+## Error Handling
+All API endpoints follow a consistent error response format:
+```json
+{
+  "error": "Error type",
+  "message": "Human-readable error message",
+  "details": "Optional additional details"
+}
+```
+
+## Rate Limiting
+All endpoints are subject to rate limiting:
+- Authenticated users: 100 requests per hour per endpoint
+- Unauthenticated users: 10 requests per hour per endpoint
+
+## Caching
+Personalized content is cached server-side with a configurable expiration time (default: 1 hour). Clients should implement appropriate cache headers to avoid unnecessary requests.

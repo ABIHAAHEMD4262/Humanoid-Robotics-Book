@@ -1,0 +1,151 @@
+import React, { useState } from 'react';
+import { createAuthClient } from 'better-auth/react';
+import '../../css/auth-forms.css';
+
+interface FormData {
+  email: string;
+  password: string;
+}
+
+// Default auth client configuration
+const getAuthClient = () => {
+  return createAuthClient({
+    baseURL: 'http://localhost:4000/api/auth'
+  });
+};
+
+const SigninForm: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    password: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newFieldErrors: Record<string, string> = {};
+
+    if (!formData.email.trim()) {
+      newFieldErrors.email = 'Email is required';
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newFieldErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.password) {
+      newFieldErrors.password = 'Password is required';
+    }
+
+    setFieldErrors(newFieldErrors);
+    return Object.keys(newFieldErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Clear previous messages
+    setError(null);
+    setSuccess(null);
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      console.log('Signin data:', formData);
+
+      // Use Better-Auth for signin
+      const authClient = getAuthClient();
+      const result = await authClient.signIn.email({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (result?.error) {
+        setError(result.error.message || 'An error occurred during sign in');
+      } else {
+        setSuccess('Sign in successful! Redirecting to home...');
+        setTimeout(() => {
+          window.location.href = '/Humanoid-Robotics-Book/';
+        }, 1500);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'An unexpected error occurred during sign in. Please try again.';
+      setError(errorMessage);
+      console.error('Signin error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-form-wrapper">
+      <h2>Welcome Back</h2>
+      <p className="auth-form-subtitle">Sign in to continue your learning journey</p>
+
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={fieldErrors.email ? 'error' : ''}
+            placeholder="you@example.com"
+          />
+          {fieldErrors.email && <div className="field-error">{fieldErrors.email}</div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className={fieldErrors.password ? 'error' : ''}
+            placeholder="Enter your password"
+          />
+          {fieldErrors.password && <div className="field-error">{fieldErrors.password}</div>}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className={`submit-button ${loading ? 'loading' : ''}`}
+        >
+          {loading ? 'Signing In...' : 'Sign In'}
+        </button>
+
+        <div className="auth-link">
+          Don't have an account? <a href="/Humanoid-Robotics-Book/signup">Sign up here</a>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default SigninForm;
