@@ -11,7 +11,10 @@ const PORT = process.env.PORT || 4000;
 
 // CORS middleware - allow frontend to connect
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'https://abihaahemd4262.github.io'
+  ],
   credentials: true,
 }));
 
