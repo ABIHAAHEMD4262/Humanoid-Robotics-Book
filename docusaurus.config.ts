@@ -12,6 +12,9 @@ const config: Config = {
   // Custom fields for chatbot integration
   customFields: {
     chatbotApiUrl: process.env.CHATBOT_API_URL || 'https://abihacodes-rag-chatbot-backend.hf.space',
+    // Auth configuration
+    authEnabled: true,
+    authApiUrl: process.env.AUTH_API_URL || 'https://abihacodes-humanoid-robotics-book-auth.hf.space/api/auth',
   },
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
