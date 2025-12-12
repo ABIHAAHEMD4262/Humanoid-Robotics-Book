@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     # Optional Configuration
     environment: str = "development"
+    debug: bool = False
     log_level: str = "INFO"
     cors_origins: list[str] = [
         "http://localhost:3000",

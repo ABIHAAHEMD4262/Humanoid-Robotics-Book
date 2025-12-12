@@ -8,3 +8,9 @@ google-generativeai==0.8.3
 openai==1.55.3
 redis==5.2.0
 tiktoken==0.8.0
+
+# Neon Serverless Postgres (Hackathon Requirement)
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+psycopg2-binary==2.9.10
