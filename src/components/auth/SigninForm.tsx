@@ -7,11 +7,14 @@ interface FormData {
   password: string;
 }
 
-// Default auth client configuration
+// Get auth client with production backend URL
 const getAuthClient = () => {
-  return createAuthClient({
-    baseURL: 'http://localhost:4000/api/auth'
-  });
+  // Use production HF Spaces backend, fallback to localhost for development
+  const baseURL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://abihacodes-humanoid-robotics-book-auth.hf.space/api/auth'
+    : 'http://localhost:4000/api/auth';
+
+  return createAuthClient({ baseURL });
 };
 
 const SigninForm: React.FC = () => {
