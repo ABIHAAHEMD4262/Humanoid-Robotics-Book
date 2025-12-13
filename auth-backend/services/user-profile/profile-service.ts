@@ -1,7 +1,6 @@
-import { db } from '../../lib/database';
+import { db, sql } from '../../lib/database';
 import { logger } from '../../lib/logger';
 import { ProfileValidator, ProfileData, ValidationError } from './profile-validator';
-import { auth } from '../../auth/better-auth.config';
 
 export interface UserProfile {
   id: string;
@@ -65,15 +64,17 @@ export class ProfileService {
     try {
       logger.info(`Retrieving profile for user ${userId}`);
 
-      // Use Better-Auth's internal adapter to query the user
-      const user = await auth.api.getUser({
-        userId: userId,
-      }) as any;
+      // Query the user table directly using raw SQL
+      const result = await sql`
+        SELECT * FROM "user" WHERE id = ${userId} LIMIT 1
+      `;
 
-      if (!user) {
+      if (!result || result.length === 0) {
         logger.warn(`User not found: ${userId}`);
         return null;
       }
+
+      const user = result[0];
 
       // Extract profile data from user record (Better-Auth stores additional fields)
       const profile: UserProfile = {
