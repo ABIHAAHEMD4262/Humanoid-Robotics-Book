@@ -1,4 +1,9 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env from parent directory (root of project)
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 import { neon, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
 import { readFileSync } from 'fs';

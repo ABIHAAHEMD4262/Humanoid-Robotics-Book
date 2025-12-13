@@ -1,4 +1,9 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env from parent directory (root of project)
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 import express from 'express';
 import cors from 'cors';
 import apiRouter from './src/api';
@@ -22,42 +27,49 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Better-Auth routes - mount auth handler with proper URL construction
+// Better-Auth routes - convert Express request to Web Request
 app.all('/api/auth/*', async (req, res) => {
   try {
-    // Construct the full URL for Better-Auth
-    const protocol = req.protocol;
-    const host = req.get('host');
-    const fullUrl = `${protocol}://${host}${req.originalUrl}`;
+    // Get the protocol and host, handling proxy headers
+    const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+    const host = req.get('x-forwarded-host') || req.get('host');
 
-    // Create a Web Request object from Express request
-    const request = new Request(fullUrl, {
+    // Build the full URL
+    const url = `${protocol}://${host}${req.originalUrl}`;
+
+    // Get request body as text if it exists
+    const body = req.method !== 'GET' && req.method !== 'HEAD'
+      ? JSON.stringify(req.body)
+      : undefined;
+
+    // Create Web Request
+    const webRequest = new Request(url, {
       method: req.method,
-      headers: new Headers(req.headers as Record<string, string>),
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+      headers: req.headers as HeadersInit,
+      body,
     });
 
     // Call Better-Auth handler
-    const response = await auth.handler(request);
+    const webResponse = await auth.handler(webRequest);
 
-    // Set response headers
-    response.headers.forEach((value, key) => {
+    // Copy headers from Web Response to Express response
+    webResponse.headers.forEach((value, key) => {
       res.setHeader(key, value);
     });
 
-    // Set status and send response
-    res.status(response.status);
+    // Set status code
+    res.status(webResponse.status);
 
-    // Send response body
-    if (response.body) {
-      const text = await response.text();
-      res.send(text);
+    // Send body
+    if (webResponse.body) {
+      const responseText = await webResponse.text();
+      res.send(responseText);
     } else {
       res.end();
     }
   } catch (error: any) {
-    logger.error('Better-Auth handler error', { error: error.message, stack: error.stack });
-    res.status(500).json({ error: 'Authentication error' });
+    logger.error('Better-Auth error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
