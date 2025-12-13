@@ -1,9 +1,4 @@
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load .env from parent directory (root of project)
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
+// Environment variables are loaded via --env-file flag in package.json
 import express from 'express';
 import cors from 'cors';
 import apiRouter from './src/api';

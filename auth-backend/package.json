@@ -4,10 +4,10 @@
   "description": "Authentication and personalization backend for Humanoid Robotics Book",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch --env-file=../.env server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
-    "migrate": "tsx migrate.ts"
+    "start": "node -r dotenv/config dist/server.js dotenv_config_path=../.env",
+    "migrate": "tsx --env-file=../.env migrate.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
