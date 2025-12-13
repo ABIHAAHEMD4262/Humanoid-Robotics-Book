@@ -72,27 +72,50 @@ const SigninForm: React.FC = () => {
     setLoading(true);
 
     try {
-      console.log('Signin data:', formData);
+      console.log('Attempting sign in with email:', formData.email);
 
       // Use Better-Auth for signin
       const authClient = getAuthClient();
+      console.log('Auth client configured with baseURL:',
+        typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+          ? 'https://abihacodes-humanoid-robotics-book-auth.hf.space/api/auth'
+          : 'http://localhost:4000/api/auth'
+      );
+
       const result = await authClient.signIn.email({
         email: formData.email,
         password: formData.password,
       });
 
+      console.log('Sign in result:', result);
+
       if (result?.error) {
-        setError(result.error.message || 'An error occurred during sign in');
-      } else {
+        const errorMsg = result.error.message || 'An error occurred during sign in';
+        console.error('Sign in error from server:', errorMsg);
+        setError(errorMsg);
+      } else if (result?.data) {
         setSuccess('Sign in successful! Redirecting to home...');
         setTimeout(() => {
           window.location.href = '/Humanoid-Robotics-Book/';
         }, 1500);
+      } else {
+        setError('Sign in failed. Please check your credentials and try again.');
       }
     } catch (err: any) {
-      const errorMessage = err?.message || 'An unexpected error occurred during sign in. Please try again.';
+      console.error('Sign in exception:', err);
+
+      // Provide more helpful error messages
+      let errorMessage = 'An error occurred during sign in.';
+
+      if (err?.message?.includes('fetch')) {
+        errorMessage = 'Unable to connect to authentication server. Please ensure the backend is running.';
+      } else if (err?.message?.includes('CORS')) {
+        errorMessage = 'Authentication server connection blocked. Please check CORS configuration.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
-      console.error('Signin error:', err);
     } finally {
       setLoading(false);
     }

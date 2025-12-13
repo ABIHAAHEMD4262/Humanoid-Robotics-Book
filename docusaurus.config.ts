@@ -94,6 +94,10 @@ const config: Config = {
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
         docsRouteBasePath: "/docs",
+        // Disable keyboard shortcuts to prevent toLowerCase error
+        removeDefaultStopWordFilter: false,
+        searchBarShortcut: false,
+        searchBarShortcutHint: false,
       },
     ],
   ],
