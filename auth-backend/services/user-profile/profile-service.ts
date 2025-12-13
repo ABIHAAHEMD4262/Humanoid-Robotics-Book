@@ -1,6 +1,7 @@
 import { db } from '../../lib/database';
 import { logger } from '../../lib/logger';
 import { ProfileValidator, ProfileData, ValidationError } from './profile-validator';
+import { auth } from '../../auth/better-auth.config';
 
 export interface UserProfile {
   id: string;
@@ -64,26 +65,24 @@ export class ProfileService {
     try {
       logger.info(`Retrieving profile for user ${userId}`);
 
-      // Query the Better-Auth user table which contains profile fields
-      const user = await db
-        .selectFrom('user')
-        .selectAll()
-        .where('id', '=', userId)
-        .executeTakeFirst();
+      // Use Better-Auth's internal adapter to query the user
+      const user = await auth.api.getUser({
+        userId: userId,
+      }) as any;
 
       if (!user) {
         logger.warn(`User not found: ${userId}`);
         return null;
       }
 
-      // Extract profile data from user record
+      // Extract profile data from user record (Better-Auth stores additional fields)
       const profile: UserProfile = {
         id: `profile_${user.id}`,
         userId: user.id,
-        softwareSkillLevel: (user as any).softwareSkillLevel || 'beginner',
-        hardwareType: (user as any).hardwareType || 'PC',
-        preferredLanguage: (user as any).preferredLanguage || 'English',
-        roboticsExperience: (user as any).roboticsExperience || 'none',
+        softwareSkillLevel: user.softwareSkillLevel || 'beginner',
+        hardwareType: user.hardwareType || 'PC',
+        preferredLanguage: user.preferredLanguage || 'English',
+        roboticsExperience: user.roboticsExperience || 'none',
         createdAt: new Date(user.createdAt),
         updatedAt: new Date(user.updatedAt),
       };
