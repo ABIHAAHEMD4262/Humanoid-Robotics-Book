@@ -184,6 +184,46 @@ button[class*="searchButton"]:hover {
 }
 
 /* ========================================
+   Sign Up Button Styling (Secondary CTA)
+   ======================================== */
+
+.navbar-signup-btn {
+  padding: 8px 24px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  border: 2px solid rgba(103, 126, 234, 0.6) !important;
+  color: #667eea !important;
+  font-weight: 600 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-right: 12px !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(103, 126, 234, 0.15) !important;
+}
+
+[data-theme='dark'] .navbar-signup-btn {
+  border-color: rgba(167, 180, 252, 0.6) !important;
+  color: #a7b4fc !important;
+}
+
+.navbar-signup-btn:hover {
+  background: rgba(103, 126, 234, 0.1) !important;
+  border-color: rgba(103, 126, 234, 0.8) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(103, 126, 234, 0.25) !important;
+  color: #667eea !important;
+}
+
+[data-theme='dark'] .navbar-signup-btn:hover {
+  background: rgba(167, 180, 252, 0.15) !important;
+  border-color: rgba(167, 180, 252, 0.8) !important;
+  color: #a7b4fc !important;
+}
+
+.navbar-signup-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* ========================================
    Color Mode Toggle Styling
    ======================================== */
 
@@ -282,6 +322,12 @@ button[class*="searchButton"]:hover {
     margin-right: 8px;
   }
 
+  .navbar-signup-btn {
+    padding: 6px 16px !important;
+    font-size: 0.9rem !important;
+    margin-right: 8px !important;
+  }
+
   .navbar-signin-btn {
     padding: 6px 16px !important;
     font-size: 0.9rem !important;
@@ -328,6 +374,12 @@ button[class*="searchButton"]:hover {
   .navbar-github-link::before {
     width: 20px;
     height: 20px;
+  }
+
+  .navbar-signup-btn {
+    padding: 6px 12px !important;
+    font-size: 0.85rem !important;
+    margin-right: 6px !important;
   }
 
   .navbar-signin-btn {
@@ -377,6 +429,13 @@ button[class*="searchButton"]:hover {
     height: 18px;
   }
 
+  .navbar-signup-btn {
+    padding: 5px 8px !important;
+    font-size: 0.75rem !important;
+    margin-right: 4px !important;
+    white-space: nowrap;
+  }
+
   .navbar-signin-btn {
     padding: 5px 10px !important;
     font-size: 0.75rem !important;
@@ -392,6 +451,11 @@ button[class*="searchButton"]:hover {
 
 /* Extra small devices - compact mode */
 @media (max-width: 400px) {
+  .navbar-signup-btn {
+    padding: 4px 6px !important;
+    font-size: 0.7rem !important;
+  }
+
   .navbar-signin-btn {
     padding: 4px 8px !important;
     font-size: 0.7rem !important;
@@ -437,18 +501,31 @@ button[class*="searchButton"]:hover {
   transform: translateX(4px);
 }
 
-/* Sign In button in mobile sidebar */
+/* Auth buttons in mobile sidebar */
+.navbar-sidebar .navbar-signup-btn,
 .navbar-sidebar .navbar-signin-btn {
   display: inline-block;
   margin: 8px 16px;
   text-align: center;
+  width: calc(100% - 32px);
 }
 
 /* Ensure navbar items are visible on mobile */
 @media (max-width: 996px) {
-  /* Keep Sign In visible in navbar on tablets */
-  .navbar__item.navbar__link[href*="signin"] {
+  /* Keep auth buttons visible in navbar on tablets */
+  .navbar__item.navbar__link[href*="signin"],
+  .navbar__item.navbar__link[href*="signup"] {
     display: inline-block !important;
+  }
+
+  /* Make hamburger menu visible and functional */
+  .navbar__toggle {
+    display: block !important;
+  }
+
+  /* Ensure Book sidebar link is visible in mobile menu */
+  .navbar-sidebar__item {
+    display: block !important;
   }
 }
 

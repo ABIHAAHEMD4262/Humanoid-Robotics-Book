@@ -115,6 +115,12 @@ const config: Config = {
         },
         // {to: '/blog', label: 'Blog', position: 'left'}, // Removed as per plan
         {
+          to: '/signup',
+          label: 'Sign Up',
+          position: 'right',
+          className: 'navbar-signup-btn',
+        },
+        {
           to: '/signin',
           label: 'Sign In',
           position: 'right',
