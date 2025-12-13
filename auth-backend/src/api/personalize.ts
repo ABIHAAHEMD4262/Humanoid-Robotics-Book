@@ -6,29 +6,26 @@ import { auth } from '../../auth/better-auth.config';
 
 const router = express.Router();
 
-// Simple middleware to validate authentication (in a real implementation, you'd use Better-Auth's middleware properly)
-const authMiddleware: express.RequestHandler = async (req, res, next) => {
-  // In a real implementation, this would properly validate the session token
-  // For now, we'll just pass through - Better-Auth would handle this properly when integrated correctly
-  next();
-  return; // Explicitly return to satisfy TypeScript
-};
-
 // POST /api/personalize - Generate personalized content for a specific chapter based on user profile
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     logger.info('Personalize endpoint called', { body: req.body });
 
-    // In a real implementation, the user would be available from the auth middleware
-    // For now, we'll simulate a user - this would be properly handled by Better-Auth
-    const user = (req as any).user || { id: 'test-user-id' };
+    // Get session from Better-Auth using the session cookie
+    const session = await auth.api.getSession({
+      headers: req.headers as any,
+    });
 
-    if (!user || !user.id) {
+    if (!session?.user) {
+      logger.warn('Unauthorized personalization request - no valid session');
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'User must be authenticated to access personalization'
       });
     }
+
+    const user = session.user;
+    logger.info('Authenticated user:', { userId: user.id, email: user.email });
 
     // Extract chapterId from the request body
     const { chapterId } = req.body;

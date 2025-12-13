@@ -58,14 +58,38 @@ export class ProfileService {
   }
 
   /**
-   * Retrieves a user profile by user ID
+   * Retrieves a user profile by user ID from Better-Auth user table
    */
   static async getProfileByUserId(userId: string): Promise<UserProfile | null> {
     try {
-      // In a real implementation, we would query the database for the profile
-      // For now, we'll return null to indicate the profile doesn't exist
-      logger.info(`Profile retrieval attempted for user ${userId}`);
-      return null;
+      logger.info(`Retrieving profile for user ${userId}`);
+
+      // Query the Better-Auth user table which contains profile fields
+      const user = await db
+        .selectFrom('user')
+        .selectAll()
+        .where('id', '=', userId)
+        .executeTakeFirst();
+
+      if (!user) {
+        logger.warn(`User not found: ${userId}`);
+        return null;
+      }
+
+      // Extract profile data from user record
+      const profile: UserProfile = {
+        id: `profile_${user.id}`,
+        userId: user.id,
+        softwareSkillLevel: (user as any).softwareSkillLevel || 'beginner',
+        hardwareType: (user as any).hardwareType || 'PC',
+        preferredLanguage: (user as any).preferredLanguage || 'English',
+        roboticsExperience: (user as any).roboticsExperience || 'none',
+        createdAt: new Date(user.createdAt),
+        updatedAt: new Date(user.updatedAt),
+      };
+
+      logger.info(`Profile retrieved for user ${userId}`, { profile });
+      return profile;
     } catch (error) {
       // Log the error with context
       logger.error(`Error retrieving profile for user ${userId}`, {
