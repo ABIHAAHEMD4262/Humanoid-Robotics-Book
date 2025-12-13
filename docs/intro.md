@@ -6,6 +6,10 @@ keywords: [physical ai, humanoid robotics, embodied intelligence, robotics intro
 tags: [introduction, getting-started]
 ---
 
+import PersonalizeButton from '@site/src/components/auth/PersonalizeButton';
+
+<PersonalizeButton chapterId="intro" />
+
 # Welcome to Physical AI & Humanoid Robotics
 :::tip 
 **Estimated Reading Time**: 8 minutes
