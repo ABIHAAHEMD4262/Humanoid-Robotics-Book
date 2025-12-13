@@ -242,29 +242,37 @@ export class PersonalizationService {
    * Gets a chapter by its ID
    */
   private static async getChapterById(chapterId: string): Promise<Chapter | null> {
-    // In a real implementation, this would query the database for the chapter
-    // For now, we'll return mock data
-    const mockChapters = [
-      {
-        id: 'ch1-intro-ros2',
-        title: 'Introduction to ROS 2',
-        slug: 'intro-ros2',
-        content: `# Introduction to ROS 2\n\nROS 2 (Robot Operating System 2) is a flexible framework for writing robot software. It is a collection of tools, libraries, and conventions that aim to simplify the task of creating complex and robust robot behavior across a wide variety of robot platforms.\n\n## Key Concepts\n\n- Nodes\n- Topics\n- Services\n- Actions\n\nThis chapter provides a comprehensive overview of ROS 2 architecture and basic concepts.`,
-        createdAt: new Date('2025-01-01'),
-        updatedAt: new Date('2025-01-01'),
-        status: 'published' as const
-      },
-      {
-        id: 'ch2-digital-twin',
-        title: 'Digital Twin Concepts',
-        slug: 'digital-twin',
-        content: `# Digital Twin in Robotics\n\nA digital twin is a virtual representation that serves as the real-time digital counterpart of a physical object or process. In robotics, digital twins enable simulation, testing, and optimization of robotic systems before deployment.\n\n## Applications\n\n- Simulation\n- Testing\n- Optimization\n- Maintenance\n\nThis chapter explores how digital twins are used in robotics applications.`,
-        createdAt: new Date('2025-01-02'),
-        updatedAt: new Date('2025-01-02'),
-        status: 'published' as const
-      }
-    ];
+    // In a real implementation, this would query the database or filesystem for the chapter
+    // For demo/testing: return generic content for any chapter ID
+    logger.info(`Getting chapter by ID: ${chapterId}`);
 
-    return mockChapters.find(chapter => chapter.id === chapterId) || null;
+    // Return a generic chapter that works for any chapter ID
+    return {
+      id: chapterId,
+      title: `Chapter: ${chapterId}`,
+      slug: chapterId,
+      content: `# Welcome to Physical AI & Humanoid Robotics
+
+This is an educational book about robotics and artificial intelligence. The content you're reading can be personalized based on your skill level and experience.
+
+## Key Topics
+
+- Robot Operating System (ROS 2)
+- Sensors and Actuators
+- Control Systems
+- Machine Learning for Robotics
+- Simulation and Digital Twins
+
+## Learning Path
+
+Whether you're a complete beginner or an experienced developer, this book adapts to your level. Advanced users will see more technical depth, while beginners get simpler explanations with more context.
+
+## Hands-On Projects
+
+Throughout this book, you'll build practical projects that run on different hardware platforms - from cloud simulations to physical robots.`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: 'published' as const
+    };
   }
 }
