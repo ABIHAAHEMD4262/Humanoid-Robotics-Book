@@ -8,9 +8,6 @@ tags: [introduction, getting-started]
 
 # Welcome to Physical AI & Humanoid Robotics
 
-import PersonalizeButton from '@site/src/components/auth/PersonalizeButton';
-
-<PersonalizeButton chapterId="intro" />
 :::tip 
 **Estimated Reading Time**: 8 minutes
 **Prerequisites**: None
