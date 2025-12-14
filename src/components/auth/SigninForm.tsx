@@ -94,10 +94,15 @@ const SigninForm: React.FC = () => {
         console.error('Sign in error from server:', errorMsg);
         setError(errorMsg);
       } else if (result?.data) {
-        setSuccess('Sign in successful! Redirecting to home...');
+        setSuccess('Sign in successful! Redirecting...');
+
+        // Get the redirect URL from query params or default to homepage
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || '/Humanoid-Robotics-Book/';
+
         setTimeout(() => {
-          window.location.href = '/Humanoid-Robotics-Book/';
-        }, 1500);
+          window.location.href = redirectTo;
+        }, 1000);
       } else {
         setError('Sign in failed. Please check your credentials and try again.');
       }
