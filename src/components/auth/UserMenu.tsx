@@ -92,13 +92,29 @@ const UserMenu: React.FC = () => {
 
   const handleLogout = async () => {
     try {
+      console.log('[UserMenu] Signing out...');
       const authClient = getAuthClient();
       await authClient.signOut();
 
+      // Clear localStorage to remove session data
+      localStorage.removeItem('better-auth.session');
+      localStorage.removeItem('better-auth.user');
+      console.log('[UserMenu] Cleared localStorage');
+
+      // Remove authenticated class from body
+      document.body.classList.remove('user-authenticated');
+
       // Redirect to homepage after logout
+      console.log('[UserMenu] Redirecting to homepage...');
       window.location.href = '/Humanoid-Robotics-Book/';
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error('[UserMenu] Logout error:', err);
+
+      // Still clear localStorage even if sign out fails
+      localStorage.removeItem('better-auth.session');
+      localStorage.removeItem('better-auth.user');
+      document.body.classList.remove('user-authenticated');
+
       // Force reload to clear any cached state
       window.location.href = '/Humanoid-Robotics-Book/';
     }
