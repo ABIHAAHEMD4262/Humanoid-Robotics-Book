@@ -3,6 +3,31 @@
  * Glassmorphism design matching the site theme
  */
 
+/* Portal positioning in navbar */
+#user-menu-portal {
+  position: fixed;
+  top: 0;
+  right: 400px; /* Position to the left of search bar and icons */
+  height: var(--ifm-navbar-height);
+  display: flex !important;
+  align-items: center;
+  z-index: 1000;
+  pointer-events: none; /* Allow clicks to pass through */
+  min-width: 200px; /* Ensure it has width */
+}
+
+#user-menu-portal .user-menu-container {
+  pointer-events: all; /* Re-enable clicks for the menu */
+  display: block !important;
+}
+
+/* Responsive positioning for different screen sizes */
+@media (max-width: 996px) {
+  #user-menu-portal {
+    right: 280px; /* Adjust for tablets */
+  }
+}
+
 .user-menu-container {
   position: relative;
   display: inline-block;
@@ -12,15 +37,16 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
   border: none;
   background: rgba(103, 126, 234, 0.1);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--ifm-font-base-color);
+  height: 36px; /* Match navbar icon height */
 }
 
 .user-menu-button:hover {
@@ -154,15 +180,60 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
+/* Tablet responsive */
+@media (max-width: 996px) and (min-width: 769px) {
+  #user-menu-portal {
+    right: 280px;
+  }
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
+  #user-menu-portal {
+    position: fixed;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    min-width: auto;
+  }
+
+  .user-menu-container {
+    width: auto;
+  }
+
   .user-name {
     display: none;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .user-menu-button {
+    padding: 0.3rem 0.5rem;
+    min-width: auto;
   }
 
   .user-menu-dropdown {
     right: -1rem;
     min-width: 220px;
+  }
+
+  /* Ensure Sign In/Sign Up buttons are hidden on mobile when authenticated */
+  body.user-authenticated .navbar__item .navbar-signup-btn,
+  body.user-authenticated .navbar__item .navbar-signin-btn,
+  body.user-authenticated a.navbar-signup-btn,
+  body.user-authenticated a.navbar-signin-btn {
+    display: none !important;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  #user-menu-portal {
+    left: 45%;
   }
 }
 
@@ -171,4 +242,15 @@
 .user-menu-item:focus-visible {
   outline: 2px solid var(--ifm-color-primary);
   outline-offset: 2px;
+}
+
+/* Hide Sign Up/Sign In links when user is authenticated */
+body.user-authenticated .navbar-signup-btn,
+body.user-authenticated .navbar-signin-btn,
+body.user-authenticated a.navbar-signup-btn,
+body.user-authenticated a.navbar-signin-btn,
+body.user-authenticated .navbar__item.navbar-signup-btn,
+body.user-authenticated .navbar__item.navbar-signin-btn {
+  display: none !important;
+  visibility: hidden !important;
 }

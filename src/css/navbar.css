@@ -365,10 +365,17 @@ button[class*="searchButton"]:hover {
     font-size: 0.85rem !important;
   }
 
+  /* Hide theme toggle on mobile - it'll be in the sidebar */
+  .navbar__item button[class*="toggle"] {
+    display: none !important;
+  }
+
+  /* Keep GitHub link visible but smaller */
   .navbar-github-link {
     width: 32px;
     height: 32px;
-    margin-right: 6px;
+    margin-right: 8px;
+    margin-left: 4px;
   }
 
   .navbar-github-link::before {
@@ -386,11 +393,6 @@ button[class*="searchButton"]:hover {
     padding: 6px 14px !important;
     font-size: 0.85rem !important;
     margin-right: 6px !important;
-  }
-
-  .navbar__item button[class*="toggle"] {
-    width: 32px !important;
-    height: 32px !important;
   }
 }
 

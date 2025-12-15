@@ -143,6 +143,11 @@
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
 }
 
+/* Sidebar bottom portal positioning */
+.sidebar-bottom-portal {
+  margin-top: auto;
+}
+
 /* Mobile sidebar toggle - ensure it's visible and accessible */
 @media (max-width: 996px) {
   /* Make navbar toggle button visible on mobile */
@@ -181,11 +186,28 @@
   /* Show doc sidebar when toggled */
   .theme-doc-sidebar-container {
     display: block !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Ensure sidebar has proper height on mobile */
+  .theme-doc-sidebar-container nav {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Mobile doc page layout */
   .docMainContainer {
     padding-bottom: 100px; /* Space for floating button */
+  }
+
+  /* Ensure custom sidebar wrapper works on mobile */
+  .custom-doc-sidebar-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100vh;
   }
 }
 

@@ -24,11 +24,18 @@ const UserMenu: React.FC = () => {
         const authClient = getAuthClient();
         const session = await authClient.getSession();
 
-        if (session?.user) {
-          setUser(session.user);
+        if (session?.data?.user) {
+          setUser(session.data.user);
+          // Add class to body to hide auth links when authenticated
+          document.body.classList.add('user-authenticated');
+        } else {
+          setUser(null);
+          // Remove class when not authenticated
+          document.body.classList.remove('user-authenticated');
         }
       } catch (err) {
         console.error('Error checking auth:', err);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -36,6 +43,11 @@ const UserMenu: React.FC = () => {
 
     if (typeof window !== 'undefined') {
       checkAuth();
+
+      // Re-check auth every 2 seconds to detect sign-in changes
+      const interval = setInterval(checkAuth, 2000);
+
+      return () => clearInterval(interval);
     }
   }, []);
 
