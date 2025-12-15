@@ -22,19 +22,23 @@ const UserMenu: React.FC = () => {
     const checkAuth = async () => {
       try {
         const authClient = getAuthClient();
+        console.log('[UserMenu] Checking auth with baseURL:', authClient);
         const session = await authClient.getSession();
+        console.log('[UserMenu] Session response:', session);
 
         if (session?.data?.user) {
+          console.log('[UserMenu] User authenticated:', session.data.user.email);
           setUser(session.data.user);
           // Add class to body to hide auth links when authenticated
           document.body.classList.add('user-authenticated');
         } else {
+          console.log('[UserMenu] No user found in session');
           setUser(null);
           // Remove class when not authenticated
           document.body.classList.remove('user-authenticated');
         }
       } catch (err) {
-        console.error('Error checking auth:', err);
+        console.error('[UserMenu] Error checking auth:', err);
         setUser(null);
       } finally {
         setLoading(false);
@@ -81,10 +85,18 @@ const UserMenu: React.FC = () => {
     setIsOpen(!isOpen);
   };
 
-  // Don't render anything while loading or if not authenticated
-  if (loading || !user) {
+  // Show loading state or empty for unauthenticated users
+  if (loading) {
+    console.log('[UserMenu] Still loading...');
     return null;
   }
+
+  if (!user) {
+    console.log('[UserMenu] No user, not rendering');
+    return null;
+  }
+
+  console.log('[UserMenu] Rendering for user:', user.email);
 
   // Get user display name (email or name)
   const displayName = user.name || user.email?.split('@')[0] || 'User';
