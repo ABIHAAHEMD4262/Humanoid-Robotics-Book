@@ -21,18 +21,41 @@ const UserMenu: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // First, check localStorage for session data
+        const storedSession = localStorage.getItem('better-auth.session');
+        const storedUser = localStorage.getItem('better-auth.user');
+
+        console.log('[UserMenu] localStorage session:', storedSession);
+        console.log('[UserMenu] localStorage user:', storedUser);
+
+        // Try to get session from Better Auth client
         const authClient = getAuthClient();
-        console.log('[UserMenu] Checking auth with baseURL:', authClient);
         const session = await authClient.getSession();
-        console.log('[UserMenu] Session response:', session);
+        console.log('[UserMenu] Better Auth session response:', session);
+
+        // Check if we have user data from either source
+        let userData = null;
 
         if (session?.data?.user) {
-          console.log('[UserMenu] User authenticated:', session.data.user.email);
-          setUser(session.data.user);
+          userData = session.data.user;
+          console.log('[UserMenu] User from Better Auth:', userData.email);
+        } else if (storedUser) {
+          // Parse stored user data
+          try {
+            userData = JSON.parse(storedUser);
+            console.log('[UserMenu] User from localStorage:', userData.email);
+          } catch (e) {
+            console.error('[UserMenu] Failed to parse stored user:', e);
+          }
+        }
+
+        if (userData) {
+          console.log('[UserMenu] User authenticated:', userData.email);
+          setUser(userData);
           // Add class to body to hide auth links when authenticated
           document.body.classList.add('user-authenticated');
         } else {
-          console.log('[UserMenu] No user found in session');
+          console.log('[UserMenu] No user found in session or localStorage');
           setUser(null);
           // Remove class when not authenticated
           document.body.classList.remove('user-authenticated');
