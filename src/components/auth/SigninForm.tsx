@@ -94,6 +94,19 @@ const SigninForm: React.FC = () => {
         console.error('Sign in error from server:', errorMsg);
         setError(errorMsg);
       } else if (result?.data) {
+        console.log('Sign in successful, storing session data:', result.data);
+
+        // Store session data in localStorage for persistence across page reloads
+        if (result.data.session) {
+          localStorage.setItem('better-auth.session', JSON.stringify(result.data.session));
+          console.log('Stored session in localStorage');
+        }
+
+        if (result.data.user) {
+          localStorage.setItem('better-auth.user', JSON.stringify(result.data.user));
+          console.log('Stored user in localStorage:', result.data.user.email);
+        }
+
         setSuccess('Sign in successful! Redirecting...');
 
         // Get the redirect URL from query params or default to homepage
